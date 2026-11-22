@@ -1,3 +1,4 @@
+import './tracing.js';
 import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -6,10 +7,12 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
+import { Logger } from 'nestjs-pino';
 import { ServerCredentials } from '@grpc/grpc-js';
 import { AppModule } from './app.module.js';
 import { createRateLimitMiddleware } from './http/rate-limit.middleware.js';
 import { mountOidc } from './infrastructure/oidc/mount-oidc.js';
+import { quietUntilReady } from './logging/startup-quiet.js';
 
 const withDatabase = Boolean(process.env.DATABASE_URL);
 
@@ -34,8 +37,12 @@ function grpcTls(config: ConfigService): ServerCredentials {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // Buffer until the pino logger below is installed, so boot messages are not printed in Nest's format.
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
   const config = app.get(ConfigService);
+  const pino = app.get(Logger);
+  const quiet = config.getOrThrow<boolean>('logStartup') ? undefined : quietUntilReady(pino);
+  app.useLogger(quiet ?? pino);
 
   const httpHost = config.getOrThrow<string>('httpHost');
   const httpPort = config.getOrThrow<number>('httpPort');
@@ -83,6 +90,8 @@ async function bootstrap() {
 
   await app.startAllMicroservices();
   await app.listen(httpPort, httpHost);
+  // LOG_STARTUP=false keeps boot chatter out; once listening, normal info logs flow again.
+  quiet?.ready();
 }
 
 await bootstrap();

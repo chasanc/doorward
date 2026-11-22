@@ -117,6 +117,7 @@ The seeded admin account uses `admin` / `changeme`. Before exposing `doorward` t
 - [gRPC](docs/grpc.md) — `doorward.v1` services, TLS setup, and API key authentication
 - [Integrate](docs/integrate.md) — how backend applications authenticate users and check permissions
 - [Sign in with Doorward (OpenID Connect)](docs/sso.md) — SSO setup, client configuration, claims, two-step verification, and troubleshooting
+- [Logging](docs/logging.md) — JSON logs on stdout, request IDs, what is redacted, and where the logs go on Compose, AWS, and GCP
 - [Environment](docs/environment.md) — reference for all required and optional environment variables
 - [Deploy](docs/deploy.md) — self-hosting with Docker Compose, cloud deployments, and Vercel
 

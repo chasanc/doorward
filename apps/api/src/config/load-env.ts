@@ -38,6 +38,11 @@ const numberKeys = new Set([
 // Optional tuning keys with defaults in env.ts. When present they must be numbers.
 const optionalNumberKeys = ['LOGIN_RATE_LIMIT_MAX', 'DB_POOL_MAX', 'DB_CONNECT_TIMEOUT_MS'];
 
+/** An optional on/off switch, read from .env then the process environment: anything but "false" keeps the default of on. */
+export function envFlag(env: Record<string, string | undefined>, key: string): boolean {
+  return (env[key] ?? process.env[key] ?? '').trim().toLowerCase() !== 'false';
+}
+
 export function findRepoRoot(start: string): string {
   let dir = resolve(start);
   for (let i = 0; i < 8; i += 1) {

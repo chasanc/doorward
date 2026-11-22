@@ -1,5 +1,6 @@
 import { parseDatabaseKind } from '@doorward/domain';
-import { apiEnv } from './load-env.js';
+import { parseLogLevel } from '../logging/log-level.js';
+import { apiEnv, envFlag } from './load-env.js';
 
 const env = apiEnv();
 
@@ -36,7 +37,11 @@ export default function loadEnv() {
     dbConnectTimeoutMs: Number(env.DB_CONNECT_TIMEOUT_MS ?? 5000),
     trustProxy: parseTrustProxy(env.TRUST_PROXY ?? process.env.TRUST_PROXY),
     corsOrigin: env.CORS_ORIGIN,
-    logLevel: env.LOG_LEVEL,
+    logLevel: parseLogLevel(env.LOG_LEVEL),
+    // Errors and warnings are always logged; these three are optional extras, on unless set to "false".
+    logHttpRequests: envFlag(env, 'LOG_HTTP_REQUESTS'),
+    logStartup: envFlag(env, 'LOG_STARTUP'),
+    logAuthFailures: envFlag(env, 'LOG_AUTH_FAILURES'),
     // Single sign-on is off unless OIDC_ISSUER is set. Optional, so the process environment
     // (container, CI, tests) can supply these without an .env entry.
     oidcIssuer: (env.OIDC_ISSUER ?? process.env.OIDC_ISSUER ?? '').trim(),

@@ -82,6 +82,12 @@ services:
       RATE_LIMIT_MAX: "100"
       RATE_LIMIT_WINDOW_SECONDS: "60"
       LOG_LEVEL: info
+      # Optional log switches and tracing (docs/logging.md). Empty OTLP endpoint = tracing off.
+      LOG_HTTP_REQUESTS: ${LOG_HTTP_REQUESTS:-true}
+      LOG_STARTUP: ${LOG_STARTUP:-true}
+      LOG_AUTH_FAILURES: ${LOG_AUTH_FAILURES:-true}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS:-}
       CORS_ORIGIN: http://localhost:3000
       GRPC_API_KEY: ${GRPC_API_KEY:-}
       # Single sign-on and two-step verification stay off unless these are set (docs/deploy.md).

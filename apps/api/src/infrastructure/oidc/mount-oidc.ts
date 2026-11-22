@@ -9,6 +9,7 @@ import { AuthService } from '../../application/auth.service.js';
 import { AppError } from '../../application/errors.js';
 import { MfaService } from '../../application/mfa.service.js';
 import { LoginRateLimiter } from '../../auth/login-rate-limiter.js';
+import { logAuthFailure } from '../../logging/auth-failure.js';
 import { OidcClientEntity } from '../database/entities/oidc-client.entity.js';
 import { handleAccountMfa } from './account-mfa.js';
 import { escapeHtml, page, readForm, send } from './html.js';
@@ -82,12 +83,16 @@ export function mountOidc(app: INestApplication): void {
         if (req.method === 'POST' && /^\/token(?:\?.*)?$/.test(req.url)) {
           const ip = req.ip || req.socket.remoteAddress || 'unknown';
           if (loginLimit.tokenBlocked(ip)) {
+            logAuthFailure(config, 'rate_limited', { endpoint: 'oidc_token', ip });
             res.statusCode = 429;
             res.setHeader('content-type', 'application/json');
             return res.end('{"error":"too_many_requests"}');
           }
           res.on('finish', () => {
-            if (res.statusCode === 401) loginLimit.tokenFailed(ip);
+            if (res.statusCode === 401) {
+              loginLimit.tokenFailed(ip);
+              logAuthFailure(config, 'invalid_client', { endpoint: 'oidc_token', ip });
+            }
           });
         }
         return callback(req, res);
@@ -123,6 +128,7 @@ export function mountOidc(app: INestApplication): void {
       const username = form.get('username') ?? '';
       const ip = req.ip || req.socket.remoteAddress || 'unknown';
       if (!loginLimit.allow(ip, username)) {
+        logAuthFailure(config, 'rate_limited', { endpoint: 'oidc_login', ip });
         return send(res, 429, loginForm(action, client.name, username, 'Too many attempts. Try again later.'));
       }
       let accountId: string;

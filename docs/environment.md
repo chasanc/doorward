@@ -55,8 +55,12 @@ LOGIN_RATE_LIMIT_MAX=10
 DB_POOL_MAX=20
 DB_CONNECT_TIMEOUT_MS=5000
 TRUST_PROXY=
+LOG_HTTP_REQUESTS=true
+LOG_STARTUP=true
+LOG_AUTH_FAILURES=true
 ```
 
+- **`LOG_HTTP_REQUESTS`**, **`LOG_STARTUP`**, **`LOG_AUTH_FAILURES`** — Switches for the optional parts of the JSON log on stdout. Each is on unless set to `false`; errors and warnings are always logged. `LOG_LEVEL` (a required shared key) sets the lowest level written. See [logging.md](logging.md).
 - **`LOGIN_RATE_LIMIT_MAX`** — Maximum login attempts allowed per IP address and per username within each `RATE_LIMIT_WINDOW_SECONDS` window. This limit is always active regardless of `RATE_LIMIT_ENABLED`; set it to `0` to disable it. Note that limiting by username means an attacker who knows a valid username can temporarily lock that account out for one window.
 - **`DB_POOL_MAX`** — Maximum database connections per API process. Keep `DB_POOL_MAX × instance count` below your database server's connection limit (PostgreSQL defaults to `100`).
 - **`DB_CONNECT_TIMEOUT_MS`** — PostgreSQL only. How long a query waits for a free pool connection before failing. SQL Server uses its driver default.

@@ -335,11 +335,13 @@ resource "aws_ecs_task_definition" "api" {
         RATE_LIMIT_MAX               = "100"
         RATE_LIMIT_WINDOW_SECONDS    = "60"
         LOG_LEVEL                    = "info"
+        LOG_HTTP_REQUESTS            = "false" # the load balancer keeps its own access log; health checks would flood this one
         CORS_ORIGIN                  = var.cors_origin
         MULTI_COMPANY_MODE           = tostring(var.multi_company_mode)
         TRUST_PROXY                  = "1" # one hop: the load balancer
       },
-      local.sso ? { OIDC_ISSUER = var.oidc_issuer } : {}
+      local.sso ? { OIDC_ISSUER = var.oidc_issuer } : {},
+      var.otlp_endpoint != "" ? { OTEL_EXPORTER_OTLP_ENDPOINT = var.otlp_endpoint } : {}
     ) : { name = k, value = v }]
 
     secrets = [for k in concat(

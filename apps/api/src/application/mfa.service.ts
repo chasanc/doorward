@@ -8,6 +8,7 @@ import { UserTotpEntity } from '../infrastructure/database/entities/user-totp.en
 import { revokeOidc } from '../infrastructure/oidc/oidc-adapter.js';
 import { runAudited } from './audit.js';
 import { Tenancy, uuidArg } from './common.js';
+import { logAuthFailure } from '../logging/auth-failure.js';
 import { invalid, notFound, precondition, unauthenticated } from './errors.js';
 import type { ServiceCall } from './service-call.js';
 import {
@@ -114,7 +115,10 @@ export class MfaService {
       }
       return ['pwd'];
     }
-    if (!(await this.accept(user, row, String(code ?? '').trim()))) throw unauthenticated('Invalid username or password');
+    if (!(await this.accept(user, row, String(code ?? '').trim()))) {
+      logAuthFailure(this.config, 'bad_mfa_code', { userId: user.id });
+      throw unauthenticated('Invalid username or password');
+    }
     return ['pwd', 'otp'];
   }
 

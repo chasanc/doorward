@@ -9,6 +9,7 @@ import { RpcException } from '@nestjs/microservices';
 import { status as GrpcStatus } from '@grpc/grpc-js';
 import type { Metadata } from '@grpc/grpc-js';
 import type { Observable } from 'rxjs';
+import { logAuthFailure } from '../logging/auth-failure.js';
 
 @Injectable()
 export class GrpcApiKeyInterceptor implements NestInterceptor {
@@ -25,6 +26,7 @@ export class GrpcApiKeyInterceptor implements NestInterceptor {
     const metadata = context.switchToRpc().getContext<Metadata>();
     const provided = firstMetadata(metadata, 'x-api-key');
     if (provided !== expected) {
+      logAuthFailure(this.config, 'invalid_api_key');
       throw new RpcException({
         code: GrpcStatus.UNAUTHENTICATED,
         message: 'invalid api key',
