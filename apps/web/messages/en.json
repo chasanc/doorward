@@ -1,0 +1,159 @@
+{
+  "SUCCESS": "Success",
+  "ERROR": "Error",
+  "YES": "Yes",
+  "NO": "No",
+  "HOME": "Home",
+  "USER": "Users",
+  "USERGROUP": "Groups",
+  "PERMISSION": "Permissions",
+  "APPLICATION": "Applications",
+  "COMPANY": "Companies",
+  "SCOPE": "Scopes",
+  "LANGUAGE": "Language",
+  "ABOUT": "About",
+  "LOGIN": "Login",
+  "PRODUCT": "Doorward",
+  "HEADER": {
+    "LOGGED_IN": "Logged in as",
+    "LOGOUT": "Sign out",
+    "TITLE": "Doorward"
+  },
+  "LOGINS": {
+    "LOGIN": "Sign in",
+    "USERNAME": "Username",
+    "PASSWORD": "Password",
+    "HINT": "Only users who hold the doorward.admin permission company-wide can sign in to this admin. The session is an httpOnly doorward_token cookie.",
+    "PENDING": "Signing in…",
+    "FAILED": "Login failed"
+  },
+  "LANGUAGES": {
+    "CHANGED": "Language changed to English",
+    "CHOOSE": "Choose a language. The choice is stored in the doorward_locale cookie."
+  },
+  "HOMEPAGE": {
+    "INTRO": "Admin UI for users, groups, scopes and the permissions they hold. The browser uses REST; integrating apps ask Check over gRPC.",
+    "FEATURES": "What you can do",
+    "FEATURE_USERS": "Create users and groups, and put users into groups",
+    "FEATURE_RIGHTS": "Grant a permission to a user or a group, company-wide or at one scope",
+    "FEATURE_SCOPES": "Arrange scopes in a tree; a grant at a scope applies to everything below it",
+    "FEATURE_OVERVIEW": "See everything a user holds, directly and through groups"
+  },
+  "ABOUT_PAGE": {
+    "BODY": "Doorward keeps users, groups and grants. Apps ask it whether a user may do something, over gRPC. This UI manages the same data over REST."
+  },
+  "FIELDS": {
+    "USERNAME": "Username",
+    "FIRST_NAME": "First name",
+    "LAST_NAME": "Last name",
+    "EMAIL": "Email",
+    "MOBILE": "Mobile",
+    "PASSWORD": "Password",
+    "COMPANY_FIELD": "Company",
+    "NEW_PASSWORD": "New password",
+    "NAME": "Name",
+    "DESCRIPTION": "Description",
+    "REFERENCE": "Reference",
+    "PARENT": "Parent",
+    "CONTACT": "Contact person",
+    "PHONE": "Phone",
+    "ACTIVE": "Active",
+    "REQUIRE_MFA": "Require two-step verification"
+  },
+  "ACTIONS": {
+    "ADD": "Add",
+    "SAVE": "Save",
+    "SAVING": "Saving…",
+    "REMOVE": "Remove",
+    "CANCEL": "Cancel",
+    "NONE": "None",
+    "EMPTY": "Nothing here yet.",
+    "FAILED": "That did not work",
+    "DEACTIVATE": "Deactivate",
+    "ACTIVATE": "Activate",
+    "REMOVE_PERMANENTLY": "Remove permanently",
+    "SEARCH": "Search…",
+    "SHOW_DEACTIVATED": "Show deactivated",
+    "CONFIRM_DEACTIVATE": "Deactivate this entry? It leaves the lists and can be activated again.",
+    "CONFIRM_REMOVE": "Remove this entry permanently? This cannot be undone. Its history stays in the audit log."
+  },
+  "USERS": {
+    "HINT": "A user belongs to one company. Signing in needs an active user in an active company; to open this admin the user also needs doorward.admin. Deactivating a user keeps its history; remove permanently only after that.",
+    "GROUPS": "Groups",
+    "PASSWORD_SET": "Password changed",
+    "MFA": "Two-step verification",
+    "MFA_OFF": "Off",
+    "MFA_PENDING": "Started, not confirmed yet",
+    "MFA_ON": "On",
+    "MFA_CODES_LEFT": "recovery codes left",
+    "MFA_START": "Set up",
+    "MFA_SECRET": "Scan the QR code with an authenticator app, or type the key. It is shown only once.",
+    "MFA_QR": "QR code for the authenticator app",
+    "MFA_CODE": "Code from the app",
+    "MFA_CONFIRM": "Confirm",
+    "MFA_RECOVERY": "Recovery codes. Give them to the user now; they are shown only once and each works one time.",
+    "MFA_RESET": "Reset",
+    "MFA_CONFIRM_RESET": "Turn off two-step verification for this user? Their sign-ins end at once."
+  },
+  "USERGROUPS": {
+    "HINT": "A group is a flat set of users. Its grants apply to every member while the group is active.",
+    "MEMBERS": "Members",
+    "NO_MEMBERS": "No members yet. Add users from the user page."
+  },
+  "PERMISSIONS": {
+    "HINT": "A permission is a name your apps check, such as invoice.approve. Names are lowercase, dotted, and unique per company. A deactivated permission stops counting in checks."
+  },
+  "APPLICATIONS": {
+    "HINT": "An application signs its users in through Doorward (OpenID Connect). It belongs to one company, and only that company's users can sign in to it. Deactivating it stops new sign-ins and token refreshes.",
+    "CLIENT_ID": "Client ID",
+    "CLIENT_ID_LABEL": "Client ID",
+    "CLIENT_SECRET": "Client secret",
+    "SECRET_ONCE": "Copy the secret now. It is shown only once and cannot be read again.",
+    "DONE": "I have copied it",
+    "ROTATE": "Replace secret",
+    "CONFIRM_ROTATE": "Replace the secret? The old one stops working at once, so update the application first or right after.",
+    "REDIRECT_URIS": "Redirect URIs (one per line)",
+    "LOGOUT_URIS": "Sign-out redirect URIs (one per line)",
+    "SCOPES": "Allowed scopes (one per line)",
+    "GRANTS": "Grant types (one per line)"
+  },
+  "SCOPES": {
+    "HINT": "A scope is a place in your own tree, such as a region or a customer. A grant at a scope applies to the scopes below it. A scope with children cannot be deactivated."
+  },
+  "COMPANIES": {
+    "HINT": "Everything belongs to one company, and a check never crosses companies. The company key identifies it to gRPC callers when multi-company mode is on."
+  },
+  "GRANTS": {
+    "TITLE": "Permissions held",
+    "PERMISSION": "Permission",
+    "SCOPE": "Scope",
+    "COMPANY_WIDE": "Company-wide",
+    "SOURCE": "Via",
+    "DIRECT": "Direct",
+    "GROUP": "Group",
+    "ADD": "Grant",
+    "EMPTY": "No permissions granted.",
+    "PICK_PERMISSION": "Choose a permission"
+  },
+  "HISTORY": {
+    "TITLE": "Change history",
+    "SELECT": "Select an entry to see its history",
+    "EMPTY": "No changes recorded yet.",
+    "FAILED": "History could not be loaded",
+    "WHEN": "When",
+    "BY": "Changed by",
+    "CHANGE": "Change",
+    "DETAILS": "Details",
+    "CREATE": "Created",
+    "UPDATE": "Updated",
+    "DELETE": "Deleted",
+    "ADD_MEMBER": "Member added",
+    "REMOVE_MEMBER": "Member removed",
+    "SET_PASSWORD": "Password changed",
+    "SET_USER_GROUPS": "Groups changed",
+    "UNKNOWN": "Unknown",
+    "DEACTIVATE": "Deactivated",
+    "ACTIVATE": "Activated",
+    "REMOVE": "Removed permanently"
+  }
+}

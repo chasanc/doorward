@@ -1,0 +1,37 @@
+{
+  "name": "@doorward/proto",
+  "version": "0.0.1",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "Doorward protobuf SSOT and generated TypeScript",
+  "engines": {
+    "node": ">=24.21.0 <25"
+  },
+  "exports": {
+    ".": {
+      "types": "./gen/ts/doorward.ts",
+      "import": "./gen/ts/doorward.ts",
+      "default": "./gen/ts/doorward.ts"
+    },
+    "./nestjs": {
+      "types": "./gen/nestjs/doorward.ts",
+      "import": "./gen/nestjs/doorward.ts",
+      "default": "./gen/nestjs/doorward.ts"
+    },
+    "./doorward.proto": "./doorward.proto"
+  },
+  "scripts": {
+    "generate": "buf generate",
+    "build": "buf generate",
+    "docs": "buf generate",
+    "clean": "rm -rf gen"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.14.4"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "^1.73.0",
+    "ts-proto": "^2.12.4"
+  }
+}
