@@ -19,6 +19,7 @@ import type { Request, Response } from 'express';
 import { AuthService } from '../application/auth.service.js';
 import { MfaService } from '../application/mfa.service.js';
 import { UsersService } from '../application/users.service.js';
+import { logAuthFailure } from '../logging/auth-failure.js';
 import { AUTH_COOKIE, authCookieOptions, type SessionPayload } from './auth.constants.js';
 import { CurrentUser } from './current-user.decorator.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
@@ -68,6 +69,7 @@ export class AuthController {
   private async signIn(body: LoginBody, request: Request): Promise<{ user: User; token: string }> {
     const ip = request.ip || request.socket.remoteAddress || 'unknown';
     if (!this.loginLimit.allow(ip, body.username ?? body.userKey ?? '')) {
+      logAuthFailure(this.config, 'rate_limited', { ip });
       throw new HttpException('Too many login attempts', HttpStatus.TOO_MANY_REQUESTS);
     }
     const call = { source: 'rest' as const };

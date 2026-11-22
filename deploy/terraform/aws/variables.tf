@@ -50,6 +50,12 @@ variable "oidc_issuer" {
   default     = ""
 }
 
+variable "otlp_endpoint" {
+  description = "OTLP/HTTP collector URL, for example http://collector:4318. Empty keeps tracing off. The task's security group must allow outbound traffic to it."
+  type        = string
+  default     = ""
+}
+
 variable "oidc_signing_key_json" {
   description = "The JSON printed by scripts/generate-oidc-key.mjs. Required when oidc_issuer is set."
   type        = string

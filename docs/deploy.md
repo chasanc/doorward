@@ -99,6 +99,8 @@ Run the API container behind an HTTPS load balancer. Starting-point Terraform co
 - **Cloud Run and gRPC:** Cloud Run only exposes a single port per service, so the GCP example serves HTTP only. If you need gRPC alongside HTTP, use GKE or a Compute Engine VM.
 - **Database migrations:** Apply the SQL scripts in `db/postgres` (or `db/mssql`) manually or via a one-off job before starting the API for the first time. The API never runs schema migrations automatically.
 - **Health checks:** Point your load balancer health check at `GET /api/health` on port `3001`.
+- **Logs:** The API writes JSON logs to stdout and your platform collects them. Both Terraform examples set `LOG_HTTP_REQUESTS=false`, because the load balancer keeps its own access log and health checks would flood the API's. See [logging.md](logging.md) for retention and the other switches.
+- **Tracing (optional):** Set the Terraform variable `otlp_endpoint` (for example `http://collector:4318`) to send OpenTelemetry traces. It is empty by default, which keeps tracing off. The collector is not created by the examples, and the API must be able to reach it: on AWS, allow outbound port `4318` in the task's security group; on GCP, give Cloud Run VPC egress. See [logging.md](logging.md#tracing-optional-opentelemetry).
 - **Securing gRPC:** Keep gRPC clients on a private network whenever possible. When gRPC traffic crosses an untrusted network, enable both TLS and `GRPC_API_KEY`.
 - **Running multiple API instances:** Point all instances at the same database and configure the same OIDC signing key and cookie keys. Note that per-IP rate limits are tracked in memory per process rather than shared across instances. Keep `DB_POOL_MAX × instance count` below your database's connection limit.
 

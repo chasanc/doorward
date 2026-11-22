@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, IsNull } from 'typeorm';
 import type { User } from '@doorward/proto';
+import { ConfigService } from '@nestjs/config';
+import { logAuthFailure } from '../logging/auth-failure.js';
 import { CompanyEntity } from '../infrastructure/database/entities/company.entity.js';
 import { UserEntity } from '../infrastructure/database/entities/user.entity.js';
 import { AccessService } from './access.service.js';
@@ -19,6 +21,7 @@ export class AuthService {
     private readonly passwords: PasswordService,
     private readonly access: AccessService,
     private readonly tenancy: Tenancy,
+    private readonly config: ConfigService,
   ) {}
 
   /**
@@ -41,13 +44,19 @@ export class AuthService {
     const user = users.length === 1 ? users[0] : undefined;
     // Verify even when no user matched so timing does not reveal the username.
     const ok = await this.passwords.verify(user?.passwordHash ?? '', input.password);
-    if (!user || !ok) throw unauthenticated('Invalid username or password');
+    // The caller always sees the same message; the log says which check failed, for operators only.
+    const fail = (reason: string) => {
+      // The stored username, and only when a row matched: what was typed can be a password.
+      logAuthFailure(this.config, reason, { username: user?.username, source: call.source });
+      return unauthenticated('Invalid username or password');
+    };
+    if (!user || !ok) throw fail('bad_credentials');
     const confined = this.tenancy.confined(call);
-    if (confined !== undefined && confined !== user.companyId) throw unauthenticated('Invalid username or password');
+    if (confined !== undefined && confined !== user.companyId) throw fail('company_mismatch');
     const company = await this.db
       .getRepository(CompanyEntity)
       .findOne({ where: { id: user.companyId, deletedAt: IsNull(), active: true } });
-    if (!company) throw unauthenticated('Invalid username or password');
+    if (!company) throw fail('company_inactive');
     if (this.passwords.needsRehash(user.passwordHash)) {
       const passwordHash = await this.passwords.hash(input.password);
       await this.db.getRepository(UserEntity).update({ id: user.id }, { passwordHash });

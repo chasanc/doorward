@@ -40,11 +40,13 @@ locals {
       RATE_LIMIT_MAX               = "100"
       RATE_LIMIT_WINDOW_SECONDS    = "60"
       LOG_LEVEL                    = "info"
+      LOG_HTTP_REQUESTS            = "false" # Cloud Run keeps its own request log; health probes would flood this one
       CORS_ORIGIN                  = var.cors_origin
       MULTI_COMPANY_MODE           = tostring(var.multi_company_mode)
       TRUST_PROXY                  = "1" # one hop: Google's front end
     },
-    local.sso ? { OIDC_ISSUER = var.oidc_issuer } : {}
+    local.sso ? { OIDC_ISSUER = var.oidc_issuer } : {},
+    var.otlp_endpoint != "" ? { OTEL_EXPORTER_OTLP_ENDPOINT = var.otlp_endpoint } : {}
   )
 }
 

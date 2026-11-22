@@ -2,6 +2,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly requestId?: string,
   ) {
     super(message);
   }
@@ -24,7 +25,10 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     const message = Array.isArray((data as { message?: string | string[] }).message)
       ? (data as { message: string[] }).message.join(', ')
       : (data as { message?: string }).message || response.statusText;
-    throw new ApiError(message, response.status);
+    // Only server faults get the ID on screen: it is what an admin searches the logs for.
+    const requestId = response.headers.get('X-Request-Id') ?? undefined;
+    const shown = response.status >= 500 && requestId ? `${message} (Request ID: ${requestId})` : message;
+    throw new ApiError(shown, response.status, requestId);
   }
   return data;
 }

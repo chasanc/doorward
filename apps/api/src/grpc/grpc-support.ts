@@ -2,6 +2,7 @@ import {
   CallHandler,
   ExecutionContext,
   Injectable,
+  Logger,
   NestInterceptor,
 } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
@@ -22,6 +23,8 @@ const CODES: Record<AppErrorKind, GrpcStatus> = {
 /** Turns an AppError into the matching gRPC status; anything else is INTERNAL with no details. */
 @Injectable()
 export class GrpcErrorInterceptor implements NestInterceptor {
+  private readonly logger = new Logger('Grpc');
+
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     if (context.getType() !== 'rpc') return next.handle();
     return next.handle().pipe(
@@ -30,7 +33,11 @@ export class GrpcErrorInterceptor implements NestInterceptor {
           return throwError(() => new RpcException({ code: CODES[error.kind], message: error.message }));
         }
         if (error instanceof RpcException) return throwError(() => error);
-        console.error(error);
+        // Message and stack only: a TypeORM error also carries the bound query parameters.
+        this.logger.error(
+          error instanceof Error ? error.message : String(error),
+          error instanceof Error ? error.stack : undefined,
+        );
         return throwError(() => new RpcException({ code: GrpcStatus.INTERNAL, message: 'Internal error' }));
       }),
     );
