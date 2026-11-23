@@ -2,25 +2,33 @@ FROM node:24-alpine AS base
 RUN apk add --no-cache python3 make g++ libc6-compat
 RUN corepack enable && corepack prepare pnpm@12.4.2 --activate
 WORKDIR /app
-
-FROM base AS deps
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY packages/domain/package.json packages/domain/package.json
 COPY packages/proto/package.json packages/proto/package.json
 COPY examples/grpc-client/package.json examples/grpc-client/package.json
-RUN pnpm install --frozen-lockfile
 
-FROM deps AS build
+FROM base AS build
+RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm --filter @doorward/domain build && pnpm --filter @doorward/api build
+
+# Production dependencies of the API and its workspace packages only: no web app, compilers or linters.
+FROM base AS runtime
+RUN pnpm install --frozen-lockfile --prod --filter @doorward/api...
+# The API finds the repo root by pnpm-workspace.yaml and reads these at startup.
+COPY db db
+COPY packages/proto/doorward.proto packages/proto/doorward.proto
+COPY deploy/compose/api-entrypoint.sh deploy/compose/api-entrypoint.sh
+COPY --from=build /app/packages/domain/dist packages/domain/dist
+COPY --from=build /app/apps/api/dist apps/api/dist
 
 FROM node:24-alpine
 RUN apk add --no-cache libc6-compat wget
 WORKDIR /app
 ENV NODE_ENV=production
-COPY --from=build /app .
+COPY --from=runtime /app .
 # The entrypoint writes .env files into these two folders and nothing else under /app.
 RUN chown node:node /app /app/apps/api
 USER node
