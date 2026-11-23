@@ -41,7 +41,7 @@ export function UsersView({
       detail={(row) => (
         <>
           <UserExtras userId={row.id} groups={groups} />
-          <MfaPanel userId={row.id} />
+          <MfaPanel key={row.id} userId={row.id} />
           <GrantsEditor subject={{ userId: row.id }} permissions={permissions} scopes={scopes} groupNames={groupNames} />
         </>
       )}

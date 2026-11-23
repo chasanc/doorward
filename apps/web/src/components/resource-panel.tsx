@@ -33,7 +33,7 @@ const initial = (fields: Field[], row?: Row): Values =>
       f.kind === 'checkbox'
         ? row
           ? Boolean(row[f.key])
-          : true
+          : f.defaultValue !== 'false'
         : f.kind === 'list'
           ? ((row?.[f.key] as string[] | undefined) ?? f.initial ?? []).join('\n')
           : String((row?.[f.key] as string | undefined) ?? f.defaultValue ?? ''),

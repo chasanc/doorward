@@ -96,6 +96,8 @@ services:
       OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS:-}
       CORS_ORIGIN: http://localhost:3000
       GRPC_API_KEY: ${GRPC_API_KEY:-}
+      GRPC_CHECK_API_KEY: ${GRPC_CHECK_API_KEY:-}
+      DATABASE_SSL: ${DATABASE_SSL:-false}
       # Single sign-on and two-step verification stay off unless these are set (docs/deploy.md).
       TRUST_PROXY: ${TRUST_PROXY:-}
       OIDC_ISSUER: ${OIDC_ISSUER:-}

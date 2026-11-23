@@ -19,6 +19,8 @@ locals {
       DATABASE_URL        = "postgresql://doorward:${random_password.db.result}@${google_sql_database_instance.db.private_ip_address}:5432/doorward"
       JWT_SECRET          = random_password.jwt.result
       TOTP_ENCRYPTION_KEY = random_password.totp.result
+      GRPC_API_KEY        = random_password.grpc_api_key.result
+      GRPC_CHECK_API_KEY  = random_password.grpc_check_api_key.result
     },
     local.sso ? {
       OIDC_COOKIE_KEYS      = random_password.cookie.result
@@ -34,6 +36,7 @@ locals {
       GRPC_TLS                     = "false"
       GRPC_TLS_REQUIRE_CLIENT_CERT = "false"
       DATABASE_KIND                = "postgres"
+      DATABASE_SSL                 = "true"
       AUTO_MIGRATE                 = "true" # a fresh database needs the schema; switch to a one-off `db:migrate` job for managed rollouts
       JWT_EXPIRES_IN               = "1d"
       COOKIE_SECURE                = "true"
@@ -89,6 +92,16 @@ resource "random_password" "totp" {
 }
 
 resource "random_password" "cookie" {
+  length  = 48
+  special = false
+}
+
+resource "random_password" "grpc_api_key" {
+  length  = 48
+  special = false
+}
+
+resource "random_password" "grpc_check_api_key" {
   length  = 48
   special = false
 }
@@ -159,6 +172,7 @@ resource "google_sql_database_instance" "db" {
     ip_configuration {
       ipv4_enabled    = false # private address only
       private_network = data.google_compute_network.this.id
+      ssl_mode        = "ENCRYPTED_ONLY"
     }
 
     database_flags {

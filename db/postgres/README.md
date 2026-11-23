@@ -1,7 +1,7 @@
 # PostgreSQL pack (`doorward`)
 
 Integrator scripts for PostgreSQL or Supabase. This folder is the golden schema.
-SQL Server is a later dialect copy of the same logical model — never apply
+SQL Server is a later dialect copy of the same logical model. Never apply
 `db/mssql` to a PostgreSQL instance, and never apply this folder to SQL Server.
 
 ## Layout

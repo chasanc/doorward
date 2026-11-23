@@ -1,8 +1,8 @@
 # Domain Model
 
-Doorward manages six core concepts: **users**, **user groups**, **permissions**, **scopes** (where a permission applies), **grants** (who holds which permission and where), and **companies** (tenants).
+Doorward manages six entities: **users**, **user groups**, **permissions**, **scopes** (where a permission applies), **grants** (who holds which permission and where), and **companies** (tenants).
 
-At runtime, your applications ask `doorward` one question: *does this user hold this permission at this scope?* That lookup is called a **Check**.
+Your applications ask Doorward one question: *does this user hold this permission at this scope?* That lookup is a **Check**.
 
 ## Data model
 
@@ -16,22 +16,22 @@ company ─┬─ user ──┬─ grant ── permission
 
 | Concept | Description |
 | --- | --- |
-| **Permission** | A named capability such as `invoice.approve`. Names use lowercase dotted notation and are unique within a company. |
-| **Scope** | A node in a hierarchy that defines where a grant applies. |
-| **Grant** | Assigns one permission to one user **or** one user group, either at a specific scope or company-wide. |
-| **User group** | A flat collection of users. Every active member inherits all grants assigned to the group. |
+| **Permission** | A named capability like `invoice.approve`. Names use lowercase dotted notation and are unique within a company. |
+| **Scope** | A node in a tree that defines where a grant applies. |
+| **Grant** | Links one permission to one user **or** one user group, either at a scope or company-wide. |
+| **User group** | A flat collection of users. Active members inherit all grants on the group. |
 
 ## Rules
 
-1. **Sign-in only checks identity.** Authentication succeeds when the user exists, is active, is not deleted, belongs to an active company, and provides the right password (verified with argon2id). There is no special "can log in" permission. The admin console separately checks for the `doorward.admin` permission, just like any other application check. Separating authentication from authorization lets any app reuse `doorward` for sign-in.
-2. **Groups are flat.** Groups cannot contain other groups. A user's effective permissions are their direct grants plus the grants of every active group they belong to. Keeping groups flat makes it straightforward to trace why a user has access.
-3. **Scopes inherit downward.** A grant assigned at scope `S` applies to `S` and every descendant beneath `S`. A grant with no scope applies company-wide. For example, granting access at `Germany` automatically covers `Berlin` without listing every city.
-4. **Checks without a scope match company-wide grants only.** If an application calls `Check` without specifying a scope, a grant restricted to `Berlin` will not satisfy it.
-5. **Grants are allow-only.** `doorward` has no deny rules. Access is either granted by a matching record or absent, which means every allowed decision can point to the exact grant that authorized it.
-6. **Deactivated or deleted records have no effect.** Inactive or deleted users, groups, scopes, permissions, and companies are ignored during sign-in and `Check`. Deactivated records remain in the database (with `deleted_at` set) and can be reactivated later.
-7. **Access never crosses company boundaries.** A `Check` only evaluates records within a single company. In multi-company mode, gRPC callers are restricted to the company specified in their `company-key` metadata header.
+1. **Sign-in only checks identity.** Authentication succeeds when the user exists, is active, is not deleted, belongs to an active company, and gives the right password (verified with argon2id). There is no special "can log in" permission. The admin console checks for `doorward.admin` the same way any other app checks a permission, so any app can reuse Doorward for sign-in.
+2. **Groups are flat.** Groups cannot contain other groups. A user's effective permissions are their direct grants plus the grants of every active group they belong to. Flat groups make it easy to see why a user has access.
+3. **Scopes inherit downward.** A grant at scope `S` applies to `S` and every descendant beneath `S`. A grant with no scope applies company-wide. Granting access at `Germany` covers `Berlin` without listing every city.
+4. **Checks without a scope match company-wide grants only.** If an app calls `Check` without a scope, a grant tied to `Berlin` will not satisfy it.
+5. **Grants are allow-only.** Doorward has no deny rules. Access is either authorized by a matching grant or denied, so every allowed check can point to the exact grant that matched.
+6. **Deactivated or deleted records have no effect.** Doorward ignores inactive or deleted users, groups, scopes, permissions, and companies during sign-in and `Check`. Deactivated records stay in the database (with `deleted_at` set) and can be reactivated later.
+7. **Access stays inside one company.** A `Check` evaluates records in one company only. In multi-company mode, gRPC callers pass `company-key` in metadata, and REST calls stay scoped to the signed-in user's company.
 
-Every `Check` returns `allowed` (`true` or `false`). When `allowed` is `true`, the response also includes the matching grant (its ID, subject, and scope) so your app can audit or display why access was granted.
+Every `Check` returns `allowed` (`true` or `false`). When `allowed` is `true`, the response includes the matching grant (its ID, subject, and scope) so your app can log or display why access succeeded.
 
 ## How Users and Groups relate to Companies, Scopes and Applications
 
@@ -61,24 +61,24 @@ flowchart TD
 
 | Entity | Relation to **User** | Relation to **User group** |
 | --- | --- | --- |
-| **Company** | Each user belongs to one company, assigned at creation. The company must be active for the user to sign in or pass a `Check`. If the company enables **Require two-step verification**, its users must enroll before signing in. | Each group belongs to one company. |
-| **Scope** | No direct link. Users are connected to scopes only through grants held directly or through their groups. | Same: groups are connected to scopes only through grants. |
-| **Application** | No stored link. An application belongs to a company, and only users in that company can sign in to it. During sign-in, the app receives the user's profile, group names, and grants as claims; it does not store or modify them. | No stored link. The app receives the names of the user's active groups in the `groups` claim. |
-| **Permission** | Reached through direct grants or group grants. | Reached through grants attached to the group. |
+| **Company** | Each user belongs to one company, set at creation. The company must be active for the user to sign in or pass a `Check`. When a company turns on **Require two-step verification**, its users must enroll before signing in. | Each group belongs to one company. |
+| **Scope** | No direct link. Users connect to scopes through grants they hold or inherit from groups. | Groups connect to scopes through grants as well. |
+| **Application** | No stored link. An application belongs to one company, and only users in that company can sign in to it. At sign-in, the app receives the user's profile, group names, and grants as claims. | No stored link. The app receives the user's active group names in the `groups` claim. |
+| **Permission** | Reached through direct grants or group grants. | Reached through grants on the group. |
 
-What this means in practice:
+A few practical consequences of this model:
 
-- **Strict company boundaries.** A user can only join groups in their own company. A grant's subject (user or group), permission, and scope must all belong to the same company, or the request is rejected.
-- **Two additive paths to access.** A user holds their own direct grants plus the grants of every active group they belong to. Deactivating a group removes only the access that group provided.
-- **Scopes define where, not who.** Users and groups never reference a scope directly. Instead, a grant ties together *permission + subject + scope*. Deactivating a scope or removing its grants changes where access applies without modifying user or group records.
-- **Applications control sign-in, not authorization.** An application's OpenID token scopes (`openid`, `groups`, `permissions`) only determine which claims it may request. Use the returned claims or the gRPC `Check` API to decide what a user can do inside your app.
-- **Setup order matters.** Create records in dependency order: company, then permissions and scopes, then users and groups, then group memberships and grants, and finally applications (see [guide.md](guide.md#first-run-set-doorward-up-for-your-company)). Creating a user before its company, or a child scope before its parent, will fail.
+- **Company boundaries are strict.** A user can only join groups in their own company. A grant's subject (user or group), permission, and scope must all belong to the same company, or the API rejects the request.
+- **Direct and group grants add together.** A user holds their own grants plus the grants of every active group they belong to. Deactivating a group removes only the access that group provided.
+- **Grants bind subjects to scopes.** Users and groups do not reference a scope on their own; a grant ties together *permission + subject + scope*. Deactivating a scope or deleting its grants changes where access applies without touching user or group records.
+- **Applications handle sign-in.** An application's OpenID token scopes (`openid`, `groups`, `permissions`) control which claims it may request. Your app uses those claims or the gRPC `Check` API to enforce access.
+- **Create records in dependency order.** Set up the company, then permissions and scopes, then users and groups, then memberships and grants, and register applications last (see [guide.md](guide.md#first-run-set-doorward-up-for-your-company)). Creating a user before its company or a child scope before its parent fails.
 
 ## Scopes
 
-A **scope** is a node in a tree that defines *where* a grant applies. While a permission answers "what can this user do?", a scope answers "where can they do it?".
+A **scope** is a node in a tree that says *where* a grant applies. Permissions answer "what can this user do?", and scopes answer "where can they do it?".
 
-You define the tree structure to fit your domain. The initial seed creates one root scope called `Application`, which cannot be deleted. Common tree structures include:
+You shape the tree to fit your domain. The seed creates one root scope named `Application`, which cannot be deleted. Common layouts:
 
 - **Application modules:** `Application` > `Billing`, `Reports`, `Admin`
 - **Customer or tenant areas:** `Application` > `Customer A` > `Plant 1`
@@ -86,30 +86,30 @@ You define the tree structure to fit your domain. The initial seed creates one r
 
 ### Modeling locations with scopes
 
-Scopes do not include built-in coordinates or map logic, so you model locations using the hierarchy itself:
+Scopes have no built-in coordinates or map logic, so you model locations using the tree itself:
 
 1. Build a tree from broad to specific: region, country, city, building.
-2. Store an external identifier in `reference` (such as an ISO code, site code, or `lat,lon`) and human-readable notes in `description`.
-3. Grant permissions at the appropriate level, such as granting `ticket.close` to `Berlin technicians` at the `Berlin` scope.
-4. When your app calls `Check`, pass the scope ID for the specific location. Because grants inherit downward, a grant at `Germany` automatically satisfies a `Check` at `Berlin` without needing to enumerate every child location.
+2. Put an external ID in `reference` (like an ISO code, site code, or `lat,lon`) and notes in `description`.
+3. Grant permissions at the right level, such as granting `ticket.close` to `Berlin technicians` at the `Berlin` scope.
+4. Pass the scope ID for the specific location when your app calls `Check`. Because grants inherit downward, a grant at `Germany` satisfies a `Check` at `Berlin` without listing every city.
 
-In OAuth and OpenID Connect, the word "scope" refers to token permissions like `openid` or `email`. To avoid confusion, `doorward` documentation and UI always call those **token scopes** and reserve **Scope** for this hierarchy.
+In OAuth and OpenID Connect, "scope" means token permissions like `openid` or `email`. To avoid mixing the two up, Doorward's docs and UI call those **token scopes** and reserve **Scope** for this tree.
 
 ## Deactivating and removing records
 
-Companies, users, user groups, permissions, and scopes follow a two-step lifecycle for removal:
+Companies, users, user groups, permissions, and scopes use a two-step removal lifecycle:
 
-- **Deactivate** sets `active = false` and records a `deleted_at` timestamp. The record disappears from default list queries (pass `includeDeactivated` to include it) and can be restored later with **Activate**. Uniqueness constraints (usernames, keys, permission names) apply only to active rows, so reactivating a record can fail if another active record has since taken the same name. Deactivated permissions are ignored by `Check`, and a scope with active children cannot be deactivated.
-- **Remove** permanently deletes a record. The record must be deactivated first, and nothing may still reference it (for example, a user or group with grants or memberships, a scope with children or grants, a company with child records, or a permission with grants). Otherwise, the request fails with a precondition error. Before deleting, `doorward` writes a `remove` entry to `users.audit_log` containing a snapshot of the record (excluding password hashes), the actor, and the request source.
+- **Deactivate** sets `active = false` and stamps `deleted_at`. The record leaves default list queries (pass `includeDeactivated` to see it) and can be restored with **Activate**. Uniqueness constraints (usernames, keys, permission names) apply only to active rows, so reactivating a record fails if another active row has taken the same name. `Check` ignores deactivated permissions, and you cannot deactivate a scope that still has active children.
+- **Remove** deletes the row from the database. You must deactivate the record first, and nothing can still reference it (no grants or memberships on a user or group, no children or grants on a scope, no child records on a company, no grants on a permission). Before deleting, Doorward writes a `remove` entry to `users.audit_log` with a snapshot of the row (minus password hashes), the actor, and the request source.
 
-In REST, these actions map to `POST /v1/<resource>/:id/deactivate`, `POST /v1/<resource>/:id/activate`, and `DELETE /v1/<resource>/:id`. In gRPC, they map to `Deactivate<X>`, `Activate<X>`, and `Remove<X>`. Grants and group memberships are deleted immediately rather than deactivated, and those deletions are also recorded in the audit log.
+In REST, these actions map to `POST /v1/<resource>/:id/deactivate`, `POST /v1/<resource>/:id/activate`, and `DELETE /v1/<resource>/:id`. In gRPC, they map to `Deactivate<X>`, `Activate<X>`, and `Remove<X>`. Doorward deletes grants and group memberships outright instead of deactivating them, and logs those deletions in `users.audit_log` as well.
 
 ## Multi-company mode
 
-When `MULTI_COMPANY_MODE=true`, gRPC callers must send a `company-key` metadata header, and REST sessions are automatically scoped to the signed-in user's company. When multi-company mode is off (the default), all operations use the seeded default company.
+When `MULTI_COMPANY_MODE=true`, gRPC callers must send a `company-key` metadata header, and REST sessions stay scoped to the signed-in user's company. When multi-company mode is off (the default), all operations use the seeded default company.
 
 ## Audit log
 
-Every update, deactivation, activation, and removal is written to `users.audit_log` inside the same database transaction as the change itself. Inserts are not logged, and password hashes are never written to the audit log.
+Doorward writes every update, deactivation, activation, and removal to `users.audit_log` inside the same database transaction as the change. Inserts are not logged, and password hashes never appear in `audit_log`.
 
-Next: see [integrate.md](integrate.md) to learn how your application authenticates users and calls `Check`.
+Next: read [integrate.md](integrate.md) to see how your application authenticates users and calls `Check`.

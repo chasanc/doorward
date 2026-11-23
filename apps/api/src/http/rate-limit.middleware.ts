@@ -46,6 +46,7 @@ export function createRateLimitMiddleware(options: {
       next();
       return;
     }
+    // Probes must not get 429 or the load balancer marks the task down.
     if (req.path === '/health' || req.path === '/api/health') {
       next();
       return;

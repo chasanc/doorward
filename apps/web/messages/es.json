@@ -25,7 +25,8 @@
     "PASSWORD": "Contraseña",
     "HINT": "Solo pueden entrar a esta administración los usuarios que tienen el permiso doorward.admin para toda la empresa. La sesión es una cookie httpOnly doorward_token.",
     "PENDING": "Iniciando sesión…",
-    "FAILED": "Error al iniciar sesión"
+    "FAILED": "Error al iniciar sesión",
+    "CODE": "Código de la app, si la cuenta usa verificación en dos pasos"
   },
   "LANGUAGES": {
     "CHANGED": "Idioma cambiado a español",

@@ -23,6 +23,8 @@ export default function loadEnv() {
     grpcTlsKey: env.GRPC_TLS_KEY,
     grpcTlsRequireClientCert: env.GRPC_TLS_REQUIRE_CLIENT_CERT === 'true',
     grpcApiKey: env.GRPC_API_KEY,
+    grpcCheckApiKey: (env.GRPC_CHECK_API_KEY ?? process.env.GRPC_CHECK_API_KEY ?? '').trim(),
+    databaseSsl: (env.DATABASE_SSL ?? process.env.DATABASE_SSL ?? '').trim() === 'true',
     databaseKind: parseDatabaseKind(env.DATABASE_KIND),
     databaseUrl: env.DATABASE_URL,
     jwtSecret: env.JWT_SECRET,

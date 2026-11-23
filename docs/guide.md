@@ -1,6 +1,6 @@
 # Guided Tour of Doorward
 
-This guide walks through how the pieces of Doorward fit together and the order in which to set them up. Each section includes a Mermaid diagram (rendered directly on GitHub) and links to the detailed reference page.
+This guide walks through how Doorward's pieces fit together and the order to set them up. Each section has a Mermaid diagram (rendered on GitHub) and a link to the full reference page.
 
 1. [The big picture](#the-big-picture)
 2. [Choosing an integration path](#choosing-an-integration-path)
@@ -14,7 +14,7 @@ This guide walks through how the pieces of Doorward fit together and the order i
 
 ## The big picture
 
-One NestJS process handles all traffic. The admin console communicates over REST, your backend services communicate over gRPC, and end users sign in to your web apps through the built-in OpenID Connect provider. Everything reads from and writes to a single database that you host.
+One NestJS process handles all traffic. The admin console talks over REST, your backend services talk over gRPC, and end users sign in to your web apps through the built-in OpenID Connect provider. Everything reads and writes a single database that you host.
 
 ```mermaid
 flowchart LR
@@ -36,7 +36,7 @@ Reference docs: [grpc.md](grpc.md), [integrate.md](integrate.md), [sso.md](sso.m
 
 ## Choosing an integration path
 
-Use this chart to pick between OpenID Connect (SSO) and direct gRPC calls:
+Use this chart to pick between OpenID Connect (SSO) and gRPC calls:
 
 ```mermaid
 flowchart TD
@@ -51,11 +51,11 @@ flowchart TD
   scopes --> done
 ```
 
-You can combine both approaches: let users sign in with SSO, and have your backend call `Check` over gRPC whenever you need fine-grained, real-time permission checks.
+You can combine both: let users sign in with SSO, and have your backend call `Check` over gRPC whenever you need live permission checks.
 
 ## First run: set Doorward up for your company
 
-Complete these steps in order the first time you configure an environment. Each step builds on the previous one.
+Follow these steps in order when you configure a new environment, since each step depends on the one before it.
 
 ```mermaid
 flowchart TD
@@ -69,13 +69,13 @@ flowchart TD
   h --> i["9. Two-step verification<br/>optional, per user or required per company"]
 ```
 
-To see how these records connect to each other, read [domain.md](domain.md#how-users-and-groups-relate-to-companies-scopes-and-applications).
+To see how these records connect, read [domain.md](domain.md#how-users-and-groups-relate-to-companies-scopes-and-applications).
 
-**Tip:** Assign grants to **groups** rather than individual users. When someone joins or leaves a team, you only update their group membership and their access updates automatically.
+**Tip:** Assign grants to **groups** rather than individual users. When someone joins or leaves a team, updating their group membership updates their access too.
 
 ## How access is decided (Check)
 
-When your backend calls `Check`, it asks whether a specific user holds a specific permission (optionally at a specific scope). `doorward` replies with `allowed` (`true` or `false`) and, when allowed, returns the grant that matched so every decision is traceable.
+When your backend calls `Check`, it asks whether a user holds a permission, either company-wide or at a specific scope. Doorward replies with `allowed` (`true` or `false`) and, when allowed, returns the matching grant so you can trace every decision.
 
 ```mermaid
 sequenceDiagram
@@ -91,7 +91,7 @@ sequenceDiagram
   Doorward-->>App: allowed = true, grant = group "Approvers" at Germany
 ```
 
-Here is the decision logic `doorward` follows for every `Check`:
+Doorward evaluates every `Check` with this decision flow:
 
 ```mermaid
 flowchart TD
@@ -108,7 +108,7 @@ flowchart TD
   cw2 -- No --> deny
 ```
 
-There are no deny rules; if no grant matches, access is denied. Grants inherit **down** the scope tree, never up. For the full set of domain rules, see [domain.md](domain.md).
+Doorward has no deny rules; if no grant matches, access is denied. Grants inherit **down** the scope tree, never up. See [domain.md](domain.md) for the full set of domain rules.
 
 ```mermaid
 erDiagram
@@ -125,7 +125,7 @@ erDiagram
 
 ## Sign in through Doorward (SSO)
 
-`doorward` includes a standard OpenID Connect provider. Your application never handles the user's password: the browser redirects to `doorward`'s sign-in page and returns with a one-time authorization code that your app exchanges for tokens.
+Doorward ships with an OpenID Connect provider. Your application never sees the user's password: the browser redirects to Doorward's sign-in page and returns with a one-time authorization code that your app exchanges for tokens.
 
 ```mermaid
 sequenceDiagram
@@ -150,11 +150,11 @@ sequenceDiagram
 
 To connect an app:
 
-1. Open **Applications** in the admin console, register your app with its redirect URI, and save the client ID and client secret (the secret is shown only once).
+1. Open **Applications** in the admin console, register your app with its redirect URI, and save the client ID and client secret (the secret is shown once).
 2. Configure your OpenID client library with the issuer URL, client ID, client secret, PKCE enabled, and the token scopes `openid profile email groups permissions`.
 3. Read `groups` and `permissions` from the userinfo endpoint (`/me`), or call `Check` over gRPC from your backend.
 
-For the full settings table, a Next.js (Auth.js) example, and troubleshooting tips, see [sso.md](sso.md).
+See [sso.md](sso.md) for the full settings table, a Next.js (Auth.js) example, and troubleshooting.
 
 ## What happens at the sign-in page
 
@@ -194,7 +194,7 @@ flowchart LR
   use -. "phone lost" .-> lost
 ```
 
-Two-step verification requires `TOTP_ENCRYPTION_KEY` (32 or more random characters) in the API environment. Do not change this key after users have enrolled, or their existing secrets can no longer be decrypted. See [sso.md](sso.md#two-step-verification-totp) for setup details and self-service security considerations.
+Two-step verification requires `TOTP_ENCRYPTION_KEY` (32 or more random characters) in the API environment. Do not change this key after users enroll, or the API will no longer be able to decrypt their secrets. See [sso.md](sso.md#two-step-verification-totp) for setup details and self-service security notes.
 
 ## Changing and removing records
 
@@ -208,15 +208,15 @@ stateDiagram-v2
   note right of Deactivated
     Hidden from lists and ignored by Check.
     Deactivating a user or company also ends
-    their doorward sessions and tokens immediately.
+    their doorward sessions and tokens right away.
   end note
   note right of Removed
-    Permanently deleted. The audit log keeps
+    Deleted permanently. The audit log keeps
     a snapshot (without password hashes).
   end note
 ```
 
-Every update, deactivation, activation, and removal is written to `users.audit_log` in the same transaction, recording who made the change, what changed, and whether it came from REST or gRPC.
+Doorward writes every update, deactivation, activation, and removal to `users.audit_log` in the same transaction, recording who made the change, what changed, and whether it came from REST or gRPC.
 
 ## Where Doorward runs
 
@@ -234,12 +234,12 @@ flowchart LR
   end
 ```
 
-For Docker Compose, cloud, and Vercel instructions, see [deploy.md](deploy.md). For all environment variables, see [environment.md](environment.md).
+See [deploy.md](deploy.md) for Docker Compose, cloud, and Vercel instructions, and [environment.md](environment.md) for the environment variables.
 
 ## Pre-launch checklist
 
 - [ ] Change the seeded `admin` password and set a strong `JWT_SECRET`.
-- [ ] Enable gRPC TLS and set `GRPC_API_KEY`.
-- [ ] Set `OIDC_ISSUER` to your public `https://` URL **including `/oidc`**, and configure `TRUST_PROXY` when running behind a proxy or load balancer.
-- [ ] Back up `TOTP_ENCRYPTION_KEY` and your OIDC signing key securely.
+- [ ] Turn on gRPC TLS and set `GRPC_API_KEY`.
+- [ ] Set `OIDC_ISSUER` to your public `https://` URL **including `/oidc`**, and set `TRUST_PROXY` if you run behind a proxy or load balancer.
+- [ ] Back up `TOTP_ENCRYPTION_KEY` and your OIDC signing key.
 - [ ] Assign permissions to groups rather than individual users, and create a second administrator account in case one loses their authenticator device.

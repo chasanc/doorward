@@ -9,13 +9,11 @@ export type ServiceCall = {
 };
 
 /**
- * Company a gRPC caller is confined to, or undefined when no confinement applies
- * (REST, or single-company mode). The nil id means the call had no valid company-key; it
- * matches no company row, so every lookup fails. Fail closed, never open.
+ * Company a caller is confined to, or undefined when multi-company mode is off.
+ * REST sets `companyId` from the signed-in user. gRPC sets it from `company-key`.
+ * The nil id matches no company row, so a missing company fails closed.
  */
 export function confinedCompany(multiCompany: boolean, call: ServiceCall): string | undefined {
-  if (!multiCompany || call.source !== 'grpc') {
-    return undefined;
-  }
+  if (!multiCompany) return undefined;
   return call.companyId ?? NIL_UUID;
 }

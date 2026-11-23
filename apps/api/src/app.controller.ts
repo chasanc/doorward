@@ -8,7 +8,7 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  @ApiOkResponse({ description: 'Process is up (HTTP). gRPC binds separately.' })
+  @ApiOkResponse({ description: 'Process is up (HTTP). gRPC binds separately. Does not query the database.' })
   getHealth(): { status: string; name: string; schemaVersion?: number } {
     return this.appService.getHealth();
   }

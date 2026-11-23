@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query
 import { InjectDataSource } from '@nestjs/typeorm';
 import { ApiCookieAuth, ApiTags } from '@nestjs/swagger';
 import { DataSource } from 'typeorm';
-import { AccessService, type CheckInput } from '../application/access.service.js';
+import { AccessService } from '../application/access.service.js';
 import { listAudit, type AuditEntityType } from '../application/audit.js';
 import { CompaniesService } from '../application/companies.service.js';
 import { invalid } from '../application/errors.js';
@@ -12,6 +12,7 @@ import { OidcClientsService } from '../application/oidc-clients.service.js';
 import { PermissionsService } from '../application/permissions.service.js';
 import { ScopesService } from '../application/scopes.service.js';
 import type { ServiceCall } from '../application/service-call.js';
+import { Tenancy } from '../application/common.js';
 import { UserGroupsService } from '../application/user-groups.service.js';
 import { UsersService, type CreateUserInput } from '../application/users.service.js';
 import { AdminGuard } from '../auth/admin.guard.js';
@@ -33,8 +34,12 @@ const ENTITY_TYPES: readonly AuditEntityType[] = [
   'oidc_client',
 ];
 
-/** The signed-in admin behind a REST call, so the change history knows who did it. */
-const as = (session: SessionPayload): ServiceCall => ({ source: 'rest', actorUserId: session.sub });
+/** The signed-in admin behind a REST call. `companyId` confines the call when multi-company mode is on. */
+const as = (session: SessionPayload): ServiceCall => ({
+  source: 'rest',
+  actorUserId: session.sub,
+  companyId: session.companyId,
+});
 
 const paging = (query: Paging) => ({
   companyId: query.companyId,
@@ -62,6 +67,7 @@ export class V1Controller {
     private readonly scopes: ScopesService,
     private readonly grants: GrantsService,
     private readonly access: AccessService,
+    private readonly tenancy: Tenancy,
   ) {}
 
   // ---- companies ----------------------------------------------------------------------------
@@ -397,26 +403,19 @@ export class V1Controller {
     await this.grants.delete(id, as(s));
   }
 
-  @Post('check')
-  @HttpCode(200)
-  check(@Body() body: CheckInput, @CurrentUser() s: SessionPayload) {
-    return this.access.check(body, as(s));
-  }
-
-  @Post('check/batch')
-  @HttpCode(200)
-  async batchCheck(@Body() body: { checks?: CheckInput[] }, @CurrentUser() s: SessionPayload) {
-    if (!Array.isArray(body.checks)) throw invalid('checks must be a list');
-    return { results: await this.access.batchCheck(body.checks, as(s)) };
-  }
-
   // ---- history ------------------------------------------------------------------------------
 
   @Get('audit-log')
-  async auditLog(@Query('entityType') entityType?: string, @Query('entityId') entityId?: string) {
+  async auditLog(
+    @Query('entityType') entityType: string | undefined,
+    @Query('entityId') entityId: string | undefined,
+    @CurrentUser() s: SessionPayload,
+  ) {
     if (!ENTITY_TYPES.includes(entityType as AuditEntityType) || !entityId) {
       throw invalid('entityType and entityId are required');
     }
-    return { entries: await listAudit(this.db, entityType as AuditEntityType, entityId) };
+    return {
+      entries: await listAudit(this.db, entityType as AuditEntityType, entityId, this.tenancy.confined(as(s))),
+    };
   }
 }

@@ -171,9 +171,10 @@ export async function listAudit(
   dataSource: DataSource,
   entityType: AuditEntityType,
   entityId: string,
+  companyId?: string,
 ): Promise<HistoryEntryDto[]> {
   const rows = await dataSource.getRepository(AuditLogEntity).find({
-    where: { entityType, entityId },
+    where: { entityType, entityId, ...(companyId ? { companyId } : {}) },
     order: { auditLogId: 'DESC' },
     take: 100,
   });
