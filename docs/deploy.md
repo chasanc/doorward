@@ -24,10 +24,10 @@ docker compose -f deploy/compose/docker-compose.yml --profile postgres up --buil
 
 ### Published images
 
-Each `v*` release publishes `ghcr.io/chasanc/doorward-api` and `ghcr.io/chasanc/doorward-web`, tagged with the version (for example `0.1.0`) and `latest`. To run them without building, set `DOORWARD_VERSION` and skip the build:
+Each `v*` release publishes `ghcr.io/chasanc/doorward-api` and `ghcr.io/chasanc/doorward-web`, tagged with the version (for example `0.1.1`) and `latest`. To run them without building, set `DOORWARD_VERSION` and skip the build:
 
 ```bash
-export DOORWARD_VERSION=0.1.0
+export DOORWARD_VERSION=0.1.1
 docker compose -f deploy/compose/docker-compose.yml --profile postgres pull api web
 docker compose -f deploy/compose/docker-compose.yml --profile postgres up --no-build
 ```

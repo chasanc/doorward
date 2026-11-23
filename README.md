@@ -118,7 +118,7 @@ To run SQL Server instead of PostgreSQL, use `pnpm compose:up:mssql`. If port `5
 To run the published images instead of building them, set `DOORWARD_VERSION` to a release (see [CHANGELOG.md](CHANGELOG.md)), then pull and start without building:
 
 ```bash
-export DOORWARD_VERSION=0.1.0
+export DOORWARD_VERSION=0.1.1
 docker compose -f deploy/compose/docker-compose.yml --profile postgres pull api web
 docker compose -f deploy/compose/docker-compose.yml --profile postgres up --no-build
 ```
