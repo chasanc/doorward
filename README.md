@@ -23,12 +23,22 @@ Across the codebase, database schema, and UI, access rights are called **Permiss
 - You run PostgreSQL or SQL Server and want a scope tree (where a parent grant covers its children) plus an admin console.
 - You want Doorward to store passwords and handle sign-in with OpenID Connect and TOTP.
 
-## When to pick something else
+## Not in this version yet
 
-- You need a full identity platform with password resets, invites, email verification, SAML, LDAP, SCIM, or federated sign-in with Google, Entra ID, or Okta. Look at Keycloak or Ory instead. Doorward stores passwords itself and does not broker external identity providers.
-- You need deny rules, wildcard permissions, nested groups, or a separate role model. In Doorward, grants are allow-only, groups are flat, and permission names match exact strings.
-- You need arbitrary relationships between objects like OpenFGA or SpiceDB. Doorward's scope tree only supports parent-covers-child inheritance.
-- You want an in-process library rather than a network service. Look at Casbin for that.
+Password reset, invites, email verification, SCIM, and sign-in through Google, Entra ID, Okta, SAML, or LDAP are not built. Doorward stores passwords itself and signs users in as an OpenID Connect provider. Keycloak and Ory already ship those account and directory features if you need them now.
+
+## Rules a Check follows today
+
+These are the rules of the current model. A Check can name the one grant that allowed the answer.
+
+- Grants are allow-only. There is no deny row.
+- A permission name matches exactly. There are no wildcards.
+- Groups are flat, and a group is the bundle of grants. There is no second "role" object.
+- A grant on a scope covers that scope and every scope under it. Doorward does not store arbitrary relationships between objects, which is the model OpenFGA and SpiceDB use.
+
+## When the shape is wrong
+
+You want the rules to run inside your own process. Casbin is that kind of library. Doorward is a service your applications call.
 
 ## Inside the admin console
 
