@@ -29,7 +29,7 @@ export function mssqlDriver(url: string): MigrationDriver {
   let tx: Tx | undefined;
   let failed = false;
   // Read-only calls (status, the startup check) run without lock(), so they have no transaction.
-  const request = () => new sql.Request(tx ?? pool);
+  const request = () => (tx ? new sql.Request(tx) : new sql.Request(pool));
   const ready = async () => {
     if (!pool.connected) await pool.connect();
   };
