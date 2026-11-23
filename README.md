@@ -72,6 +72,7 @@ Prerequisites:
 
 - Node.js 24 LTS (`>=24.21.0 <25`), matching `.nvmrc`
 - pnpm 12 (see `packageManager` in `package.json`)
+- A running PostgreSQL or SQL Server with an empty `doorward` database. For PostgreSQL, apply `db/postgres/bootstrap/01_create_database.sql` as a superuser, or start only the Compose database with `docker compose -f deploy/compose/docker-compose.yml --profile postgres up -d postgres`.
 
 Install dependencies, generate the local `.env` files, run migrations and seed data, and start the dev servers:
 
@@ -114,6 +115,14 @@ pnpm compose:up
 
 To run SQL Server instead of PostgreSQL, use `pnpm compose:up:mssql`. If port `5432` is already taken on your machine, override it with `POSTGRES_HOST_PORT=5433 pnpm compose:up`.
 
+To run the published images instead of building them, set `DOORWARD_VERSION` to a release (see [CHANGELOG.md](CHANGELOG.md)), then pull and start without building:
+
+```bash
+export DOORWARD_VERSION=0.1.0
+docker compose -f deploy/compose/docker-compose.yml --profile postgres pull api web
+docker compose -f deploy/compose/docker-compose.yml --profile postgres up --no-build
+```
+
 You can host the **web** app on Vercel, while the NestJS API needs a long-lived host for its gRPC socket. See [docs/deploy.md](docs/deploy.md) for deployment options.
 
 ## Repository layout
@@ -149,4 +158,4 @@ The seeded admin account uses `admin` / `changeme`. Before exposing Doorward to 
 
 ## Contributing and license
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Licensed under the [MIT License](LICENSE).
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [CHANGELOG.md](CHANGELOG.md). Licensed under the [MIT License](LICENSE).

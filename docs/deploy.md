@@ -22,6 +22,18 @@ You can also invoke Docker Compose on its own:
 docker compose -f deploy/compose/docker-compose.yml --profile postgres up --build
 ```
 
+### Published images
+
+Each `v*` release publishes `ghcr.io/chasanc/doorward-api` and `ghcr.io/chasanc/doorward-web`, tagged with the version (for example `0.1.0`) and `latest`. To run them without building, set `DOORWARD_VERSION` and skip the build:
+
+```bash
+export DOORWARD_VERSION=0.1.0
+docker compose -f deploy/compose/docker-compose.yml --profile postgres pull api web
+docker compose -f deploy/compose/docker-compose.yml --profile postgres up --no-build
+```
+
+Without `DOORWARD_VERSION`, Compose tags and builds the images locally as `local`.
+
 ### Exposed ports
 
 | Service | Host port | Notes |
@@ -99,7 +111,7 @@ Run the API container behind an HTTPS load balancer. Starting-point Terraform co
 
 - **Cloud Run and gRPC:** Cloud Run exposes one port per service, so the GCP example serves HTTP only. If you need gRPC alongside HTTP, use GKE or a Compute Engine VM.
 - **Database migrations:** The API refuses to start when the schema is behind or ahead of its code. Run `pnpm db:migrate` as a one-off job before a release, or set `AUTO_MIGRATE=true` (both Terraform examples do) to apply pending migrations on boot. Seed an admin once with `pnpm db:seed`.
-- **Health checks:** Point your load balancer health check at `GET /api/health` on port `3001`. It reports that the process is up along with the schema version seen at startup, without querying the database. The process does not open the port if startup cannot reach the database.
+- **Health checks:** Point your load balancer health check at `GET /api/health` on port `3001`. It runs `SELECT 1` with a 2-second timeout (at most one query per 5 seconds per process, whatever the traffic) and returns 200 with the schema version seen at startup, or 503 `{"status":"unavailable"}` when the database does not answer. The process does not open the port if startup cannot reach the database.
 - **Logs:** The API writes JSON logs to stdout for your platform to collect. Both Terraform examples set `LOG_HTTP_REQUESTS=false` because the load balancer keeps its own access log and health checks would flood the API log. See [logging.md](logging.md) for retention and other log switches.
 - **Tracing (optional):** Set the Terraform variable `otlp_endpoint` (for example `http://collector:4318`) to send OpenTelemetry traces. It defaults to empty, which leaves tracing off. The examples do not create a collector, and the API must be able to reach it: on AWS, allow outbound port `4318` in the task security group; on GCP, give Cloud Run VPC egress. See [logging.md](logging.md#tracing-optional-opentelemetry).
 - **Securing gRPC:** Keep gRPC clients on a private network when possible. Whenever gRPC traffic crosses an untrusted network, turn on both TLS and `GRPC_API_KEY`.
@@ -117,4 +129,4 @@ Then set `GRPC_TLS=true` and configure the PEM paths in [docs/environment.md](en
 
 ## Continuous integration
 
-The GitHub Actions workflow (`.github/workflows/ci.yml`) runs linting, unit tests, a protobuf drift check, a web production build, end-to-end API and smoke tests against both PostgreSQL and SQL Server, and Docker image builds on push.
+The GitHub Actions workflow (`.github/workflows/ci.yml`) runs linting, unit tests, a protobuf drift check, a web production build, end-to-end API and smoke tests against both PostgreSQL and SQL Server, and Docker image builds on push. Pushing a `v*` tag also publishes the images to GitHub Container Registry.

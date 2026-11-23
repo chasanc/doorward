@@ -1,6 +1,6 @@
 {
   "name": "@doorward/api",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Doorward NestJS API (REST + gRPC)",
   "private": true,
   "license": "MIT",

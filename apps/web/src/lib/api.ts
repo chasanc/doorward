@@ -1,3 +1,5 @@
+import type { Page } from './types';
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -36,6 +38,21 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new ApiError(shown, response.status, requestId);
   }
   return data;
+}
+
+/** The API caps a page at 200 rows; follow nextPageToken so a list is never cut short. */
+export async function apiAll<T>(path: string): Promise<T[]> {
+  const items: T[] = [];
+  const sep = path.includes('?') ? '&' : '?';
+  let token = '';
+  do {
+    const page = await api<Page<T>>(
+      `${path}${sep}pageSize=200${token ? `&pageToken=${encodeURIComponent(token)}` : ''}`,
+    );
+    items.push(...page.items);
+    token = page.nextPageToken;
+  } while (token);
+  return items;
 }
 
 export function apiOrigin(): string {

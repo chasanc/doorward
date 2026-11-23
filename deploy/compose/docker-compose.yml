@@ -55,6 +55,8 @@ services:
       MSSQL_DOORWARD_PASSWORD: doorward
 
   api:
+    # DOORWARD_VERSION=0.1.0 selects the published image; the default tag is the local build.
+    image: ghcr.io/chasanc/doorward-api:${DOORWARD_VERSION:-local}
     build:
       context: ../..
       dockerfile: deploy/compose/Dockerfile.api
@@ -116,6 +118,7 @@ services:
         required: false
 
   web:
+    image: ghcr.io/chasanc/doorward-web:${DOORWARD_VERSION:-local}
     build:
       context: ../..
       dockerfile: deploy/compose/Dockerfile.web

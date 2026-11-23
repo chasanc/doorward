@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useTranslations } from 'next-intl';
-import { ApiError, api } from '@/lib/api';
+import { ApiError, api, apiAll } from '@/lib/api';
 import type { GrantRow, Page, PermissionRow, ScopeRow } from '@/lib/types';
 import { fieldClass, primaryClass, secondaryClass } from '@/lib/ui';
 
@@ -30,25 +30,30 @@ export function GrantsEditor({
 
   const isUser = 'userId' in subject;
   const id = isUser ? subject.userId : subject.groupId;
-  const listUrl = isUser ? `/api/v1/users/${id}/grants` : `/api/v1/grants?groupId=${id}&pageSize=200`;
+  const listUrl = isUser ? `/api/v1/users/${id}/grants` : `/api/v1/grants?groupId=${id}`;
+  // A user's effective list comes back whole in one response; a group's is paged.
+  const fetchGrants = useCallback(
+    () => (isUser ? api<Page<GrantRow>>(listUrl).then((page) => page.items) : apiAll<GrantRow>(listUrl)),
+    [isUser, listUrl],
+  );
 
   const load = useCallback(async () => {
     try {
-      setGrants((await api<Page<GrantRow>>(listUrl)).items);
+      setGrants(await fetchGrants());
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : 'error');
     }
-  }, [listUrl]);
+  }, [fetchGrants]);
 
   useEffect(() => {
     let live = true;
-    api<Page<GrantRow>>(listUrl)
-      .then((page) => live && setGrants(page.items))
+    fetchGrants()
+      .then((items) => live && setGrants(items))
       .catch((cause) => live && setError(cause instanceof ApiError ? cause.message : 'error'));
     return () => {
       live = false;
     };
-  }, [listUrl]);
+  }, [fetchGrants]);
 
   async function act(work: () => Promise<unknown>) {
     setError('');

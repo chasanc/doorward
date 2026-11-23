@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import { ApiError, api } from '@/lib/api';
-import type { Page, Row } from '@/lib/types';
+import { ApiError, api, apiAll } from '@/lib/api';
+import type { Row } from '@/lib/types';
 import { cardClass, fieldClass, primaryClass, secondaryClass } from '@/lib/ui';
 import { HistoryPanel } from '@/components/history-panel';
 
@@ -124,18 +124,8 @@ export function ResourcePanel({
     setGone(new Set(full.filter((row) => !liveIds.has(row.id)).map((row) => row.id)));
   }
 
-  /** The API caps a page at 200 rows; follow the token so every record can be searched. */
-  async function fetchAll(deactivated: boolean) {
-    const items: Row[] = [];
-    let token = '';
-    do {
-      const q = `pageSize=200${deactivated ? '&includeDeactivated=true' : ''}${token ? `&pageToken=${encodeURIComponent(token)}` : ''}`;
-      const page = await api<Page<Row>>(`${path}?${q}`);
-      items.push(...page.items);
-      token = page.nextPageToken;
-    } while (token);
-    return items;
-  }
+  const fetchAll = (deactivated: boolean) =>
+    apiAll<Row>(deactivated ? `${path}?includeDeactivated=true` : path);
 
   async function toggleDeactivated(next: boolean) {
     setShowDeactivated(next);

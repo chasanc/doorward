@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOkResponse, ApiServiceUnavailableResponse, ApiTags } from '@nestjs/swagger';
 import { AppService } from './app.service.js';
 
 @ApiTags('health')
@@ -8,8 +8,9 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  @ApiOkResponse({ description: 'Process is up (HTTP). gRPC binds separately. Does not query the database.' })
-  getHealth(): { status: string; name: string; schemaVersion?: number } {
+  @ApiOkResponse({ description: 'Process is up and the database answers SELECT 1.' })
+  @ApiServiceUnavailableResponse({ description: 'The database did not answer within 2 seconds.' })
+  getHealth(): Promise<{ status: string; name: string; schemaVersion?: number }> {
     return this.appService.getHealth();
   }
 }
