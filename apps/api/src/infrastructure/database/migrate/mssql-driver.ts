@@ -28,7 +28,11 @@ export function mssqlDriver(url: string): MigrationDriver {
   const pool = new sql.ConnectionPool({ ...configFromUrl(url), pool: { max: 1 } });
   let tx: Tx | undefined;
   let failed = false;
-  const request = () => new sql.Request(tx!);
+  // Read-only calls (status, the startup check) run without lock(), so they have no transaction.
+  const request = () => new sql.Request(tx ?? pool);
+  const ready = async () => {
+    if (!pool.connected) await pool.connect();
+  };
   const guard = async <T>(work: () => Promise<T>): Promise<T> => {
     try {
       return await work();
@@ -46,8 +50,8 @@ export function mssqlDriver(url: string): MigrationDriver {
 
   return {
     async lock() {
-      await pool.connect();
-      tx = new sql.Transaction(pool);
+      await ready();
+      tx =new sql.Transaction(pool);
       await tx.begin();
       const result = await request().query(
         `DECLARE @r int; EXEC @r = sp_getapplock @Resource = N'doorward_migrate', @LockMode = N'Exclusive',
@@ -67,6 +71,7 @@ export function mssqlDriver(url: string): MigrationDriver {
     },
     userTables: () =>
       guard(async () => {
+        await ready();
         const result = await request().query(
           `SELECT t.name FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id WHERE s.name = N'users'`,
         );
@@ -85,6 +90,7 @@ export function mssqlDriver(url: string): MigrationDriver {
       }),
     applied: () =>
       guard(async () => {
+        await ready();
         const result = await request().query(
           `SELECT version, name, checksum FROM users.${MIGRATION_TABLE} ORDER BY version`,
         );
