@@ -2,6 +2,12 @@
 
 All notable changes to Doorward are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Changed
+
+- Smaller Docker images: the API image drops from 1.55 GB to 474 MB and the web image from 1.65 GB to 305 MB. The API image installs only its production dependencies, and the web image runs the Next.js standalone server.
+
 ## [0.1.0] - 2026-11-24
 
 First public release. This is a pre-1.0 preview, so APIs, schemas, and settings may still change between minor versions.
