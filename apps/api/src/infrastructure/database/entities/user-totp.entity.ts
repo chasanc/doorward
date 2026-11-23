@@ -2,7 +2,7 @@ import { Column, Entity, PrimaryColumn } from 'typeorm';
 import { databaseKindFromEnv, dateColumn, textColumn, uuidColumn } from '../column-types.js';
 import { jsonTransformer } from './audit-log.entity.js';
 
-/** Two-step verification (TOTP) of one user. See the table comment in the 03_create_schema_users.sql files. */
+/** Two-step verification (TOTP) of one user. See the table comment in the migrations/0001_baseline.sql files. */
 @Entity({ schema: 'users', name: 'user_totp' })
 export class UserTotpEntity {
   @PrimaryColumn({ name: 'user_id', ...uuidColumn() })

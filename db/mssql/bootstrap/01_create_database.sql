@@ -1,9 +1,9 @@
 -- Create the dedicated SQL Server database and demo login.
 -- Apply as a sysadmin against master:
---   sqlcmd -S localhost -U sa -C -b -i db/mssql/01_create_database.sql
+--   sqlcmd -S localhost -U sa -C -b -i db/mssql/bootstrap/01_create_database.sql
 --
 -- Azure SQL / hosted: skip this file. Point DATABASE_URL at the
--- provisioned database and start at 03_create_schema_users.sql.
+-- provisioned database and start at migrations/0001_baseline.sql.
 --
 -- Local demo credentials match DATABASE_URL=mssql://doorward:doorward@localhost:1433/doorward
 -- Change the login password before any shared or production use.

@@ -104,14 +104,6 @@ Companies, users, user groups, permissions, and scopes follow a two-step lifecyc
 
 In REST, these actions map to `POST /v1/<resource>/:id/deactivate`, `POST /v1/<resource>/:id/activate`, and `DELETE /v1/<resource>/:id`. In gRPC, they map to `Deactivate<X>`, `Activate<X>`, and `Remove<X>`. Grants and group memberships are deleted immediately rather than deactivated, and those deletions are also recorded in the audit log.
 
-If you are updating an existing database that lacks the permission lifecycle columns, run this migration (SQL Server uses the same structure on `[users].[permission]` with a filtered unique index):
-
-```sql
-ALTER TABLE users.permission ADD COLUMN active boolean NOT NULL DEFAULT true, ADD COLUMN deleted_at timestamptz;
-ALTER TABLE users.permission DROP CONSTRAINT ux_permission_name;
-CREATE UNIQUE INDEX ux_permission_name ON users.permission (company_id, name) WHERE deleted_at IS NULL;
-```
-
 ## Multi-company mode
 
 When `MULTI_COMPANY_MODE=true`, gRPC callers must send a `company-key` metadata header, and REST sessions are automatically scoped to the signed-in user's company. When multi-company mode is off (the default), all operations use the seeded default company.

@@ -9,7 +9,7 @@ export class AppController {
 
   @Get()
   @ApiOkResponse({ description: 'Process is up (HTTP). gRPC binds separately.' })
-  getHealth(): { status: string; name: string } {
+  getHealth(): { status: string; name: string; schemaVersion?: number } {
     return this.appService.getHealth();
   }
 }

@@ -71,8 +71,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: node scripts/write-local-env.mjs
       - run: node scripts/apply-job-database-env.mjs
-      - run: bash scripts/apply-postgres.sh
       - run: pnpm --filter @doorward/domain build && pnpm --filter @doorward/api build
+      # Build the schema the way the pre-migration install script did, then let the runner adopt it.
+      - run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f apps/api/test/fixtures/legacy-03-postgres.sql
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
       - run: pnpm --filter @doorward/api start:prod &
       - name: Wait for API
         run: |
@@ -83,6 +86,13 @@ jobs:
           exit 1
       - run: pnpm --filter @doorward/api test:e2e
       - run: bash scripts/smoke-http.sh
+      - name: Migration probe (a new file applies, then the database is ahead of the code)
+        run: |
+          printf 'CREATE TABLE users.ci_probe (id int);\n' > db/postgres/migrations/0002_ci_probe.sql
+          pnpm db:migrate
+          pnpm db:migrate:status
+          rm db/postgres/migrations/0002_ci_probe.sql
+          if pnpm db:migrate:status; then echo "expected the database to be ahead of the code"; exit 1; fi
 
   e2e-mssql:
     runs-on: ubuntu-latest
@@ -137,6 +147,16 @@ jobs:
       - run: node scripts/write-local-env.mjs
       - run: node scripts/apply-job-database-env.mjs
       - run: pnpm --filter @doorward/domain build && pnpm --filter @doorward/api build
+      # Build the schema the way the pre-migration install script did, then let the runner adopt it.
+      - name: Apply legacy schema
+        run: |
+          docker run --rm --network host \
+            -v "$PWD/apps/api/test/fixtures:/fixtures:ro" \
+            --entrypoint /opt/mssql-tools18/bin/sqlcmd \
+            mcr.microsoft.com/mssql/server:2022-latest \
+            -C -S 127.0.0.1 -U doorward -P doorward -b -i /fixtures/legacy-03-mssql.sql
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
       - run: pnpm --filter @doorward/api start:prod &
       - name: Wait for API
         run: |
@@ -147,6 +167,13 @@ jobs:
           exit 1
       - run: pnpm --filter @doorward/api test:e2e
       - run: bash scripts/smoke-http.sh
+      - name: Migration probe (a new file applies, then the database is ahead of the code)
+        run: |
+          printf 'CREATE TABLE users.ci_probe (id int);\nGO\n' > db/mssql/migrations/0002_ci_probe.sql
+          pnpm db:migrate
+          pnpm db:migrate:status
+          rm db/mssql/migrations/0002_ci_probe.sql
+          if pnpm db:migrate:status; then echo "expected the database to be ahead of the code"; exit 1; fi
 
   images:
     runs-on: ubuntu-latest

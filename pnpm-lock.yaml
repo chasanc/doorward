@@ -290,12 +290,18 @@ importers:
       '@types/express':
         specifier: ^5.0.0
         version: 5.0.6
+      '@types/mssql':
+        specifier: ^12.3.0
+        version: 12.3.0(supports-color@7.2.0)
       '@types/node':
         specifier: ^24.0.0
         version: 24.13.5
       '@types/oidc-provider':
         specifier: 9.13.1
         version: 9.13.1
+      '@types/pg':
+        specifier: ^8.23.1
+        version: 8.23.1
       '@types/qrcode':
         specifier: ^1.5.6
         version: 1.5.6
@@ -2229,6 +2235,9 @@ packages:
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
 
+  '@types/mssql@12.3.0':
+    resolution: {integrity: sha512-+jy+AJtfuTDI5+nhh0hDNcir1p8P+pf+qsHXpUpYvg7EikxUUePBe+a+Kr6j/Xs89o4EbHlVzrh0HOxbqWM31Q==}
+
   '@types/node@24.13.5':
     resolution: {integrity: sha512-TXyindR+lBr22aJIdMQzCFHPHR6cR4js838mRDCSz5hOKWZvZwsXSSiXDmjRj4iJmgl+sR9O+1mkoVBSMadNug==}
 
@@ -2240,6 +2249,9 @@ packages:
 
   '@types/pg@8.15.6':
     resolution: {integrity: sha512-NoaMtzhxOrubeL/7UZuNTrejB4MPAJ0RpxZqXQf2qXuVlTPuG6Y8p4u9dKRaue4yjmC7ZhzVO2/Yyyn25znrPQ==}
+
+  '@types/pg@8.23.1':
+    resolution: {integrity: sha512-fKVHpikPdg4GKks3JuLEhvwSyvwzF23hnabPy6DD8ljVbC7+6J5dQzdv4arV6jqq57djnMgs1HKBxX4P8aBI3A==}
 
   '@types/qrcode@1.5.6':
     resolution: {integrity: sha512-te7NQcV2BOvdj2b1hCAHzAoMNuj65kNBMz0KBaxM6c3VGBOhU0dURQKOtH8CFNI/dsKkwlv32p26qYQTWoB5bw==}
@@ -6972,6 +6984,14 @@ snapshots:
 
   '@types/ms@2.1.0': {}
 
+  '@types/mssql@12.3.0(supports-color@7.2.0)':
+    dependencies:
+      '@types/node': 24.13.5
+      tarn: 3.1.2
+      tedious: 20.0.0(supports-color@7.2.0)
+    transitivePeerDependencies:
+      - supports-color
+
   '@types/node@24.13.5':
     dependencies:
       undici-types: 7.18.2
@@ -6984,9 +7004,15 @@ snapshots:
 
   '@types/pg-pool@2.0.7':
     dependencies:
-      '@types/pg': 8.15.6
+      '@types/pg': 8.23.1
 
   '@types/pg@8.15.6':
+    dependencies:
+      '@types/node': 24.13.5
+      pg-protocol: 1.16.0
+      pg-types: 2.2.0
+
+  '@types/pg@8.23.1':
     dependencies:
       '@types/node': 24.13.5
       pg-protocol: 1.16.0
