@@ -1,9 +1,9 @@
 -- Create the dedicated PostgreSQL database and demo role.
 -- Apply as a superuser against the maintenance database (usually postgres):
---   psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f db/postgres/01_create_database.sql
+--   psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f db/postgres/bootstrap/01_create_database.sql
 --
 -- Hosted Postgres / Supabase: skip this file. Point DATABASE_URL at the
--- provisioned database and start at 03_create_schema_users.sql.
+-- provisioned database and start at migrations/0001_baseline.sql.
 --
 -- Local demo credentials match DATABASE_URL=postgresql://doorward:doorward@localhost:5432/doorward
 -- Change the role password before any shared or production use.

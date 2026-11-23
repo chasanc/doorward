@@ -9,7 +9,10 @@ const files = {
 LOG_LEVEL=info
 MULTI_COMPANY_MODE=false
 `,
-  'apps/api/.env': `HTTP_HOST=0.0.0.0
+  // First admin, created by `pnpm db:seed`. Local and CI only: change it before any shared environment.
+  'apps/api/.env': `DOORWARD_ADMIN_USERNAME=admin
+DOORWARD_ADMIN_PASSWORD=changeme
+HTTP_HOST=0.0.0.0
 HTTP_PORT=3001
 GRPC_PORT=5581
 GRPC_TLS=false

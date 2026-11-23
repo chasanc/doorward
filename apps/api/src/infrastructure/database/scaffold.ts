@@ -44,7 +44,10 @@ async function scaffold(): Promise<void> {
        ORDER BY table_schema, table_name`,
     )) as Array<{ schema: string; name: string }>;
 
-    const found = rows.map((row) => `${row.schema}.${row.name}`);
+    // The migration runner's own bookkeeping table has no entity.
+    const found = rows
+      .map((row) => `${row.schema}.${row.name}`)
+      .filter((name) => name !== 'users.schema_migration');
     const missing = expected.filter((name) => !found.includes(name));
     const extra = found.filter(
       (name) => !expected.includes(name as (typeof expected)[number]),

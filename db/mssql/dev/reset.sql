@@ -1,5 +1,6 @@
--- Optional reset. Apply against doorward, then re-run 03 and 04:
---   sqlcmd -S localhost -U sa -d doorward -C -b -i db/mssql/99_drop.sql
+-- Development reset only (never part of the migration runner). Apply against doorward, then
+-- re-apply migrations/0001_baseline.sql and seed/default.sql:
+--   sqlcmd -S localhost -U sa -d doorward -C -b -i db/mssql/dev/reset.sql
 --
 -- SQL Server has no DROP SCHEMA CASCADE; tables are dropped in FK-safe order.
 --

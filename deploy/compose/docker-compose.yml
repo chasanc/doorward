@@ -3,10 +3,8 @@ name: doorward
 services:
   postgres:
     profiles: [postgres]
-    build:
-      context: ../..
-      dockerfile: deploy/compose/Dockerfile.postgres
-    image: doorward-postgres:local
+    # Empty database; the API creates the schema (AUTO_MIGRATE) and demo data (AUTO_SEED) when it starts.
+    image: postgres:16-alpine
     environment:
       POSTGRES_USER: doorward
       POSTGRES_PASSWORD: doorward
@@ -74,6 +72,14 @@ services:
       # The entrypoint writes these into .env files. The API reads only those files.
       DATABASE_KIND: ${DOORWARD_DATABASE_KIND:-postgres}
       DATABASE_URL: ${DOORWARD_DATABASE_URL:-postgresql://doorward:doorward@postgres:5432/doorward}
+      # The API applies pending migrations at start. In production, run `pnpm db:migrate` yourself instead.
+      AUTO_MIGRATE: "true"
+      # Demo only: create the default data and an admin. DOORWARD_DEMO allows the "changeme" password
+      # that the image's NODE_ENV=production would otherwise refuse.
+      AUTO_SEED: "true"
+      DOORWARD_DEMO: "true"
+      DOORWARD_ADMIN_USERNAME: ${DOORWARD_ADMIN_USERNAME:-admin}
+      DOORWARD_ADMIN_PASSWORD: ${DOORWARD_ADMIN_PASSWORD:-changeme}
       JWT_SECRET: ${JWT_SECRET:-change-me}
       JWT_EXPIRES_IN: 1d
       COOKIE_SECURE: "false"

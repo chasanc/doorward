@@ -81,10 +81,10 @@ NEXT_PUBLIC_HOME_TITLE=Doorward
 
 ## Database packs
 
-8 tables in the `users` schema: `company`, `user`, `user_group`, `user_group_member`, `permission`, `scope`, `grant` and `audit_log`. Golden pack: [`db/postgres`](db/postgres). SQL Server: [`db/mssql`](db/mssql) (same logical schema, dialect types). Never apply both packs to one instance.
+11 tables in the `users` schema (`company`, `user`, `user_group`, `user_group_member`, `permission`, `scope`, `grant`, `audit_log`, `oidc_client`, `oidc_payload`, `user_totp`) plus `schema_migration`, which the migration runner owns. Schema changes are numbered files in `<pack>/migrations`. Golden pack: [`db/postgres`](db/postgres). SQL Server: [`db/mssql`](db/mssql) (same logical schema, dialect types). Never apply both packs to one instance.
 
 - Database: `doorward`. Schema: `users`. Snake_case. `users."user"` and `users."grant"` are quoted (reserved).
-- Local seed: company `Default`; scope `Application`; user `admin` / `changeme` (argon2id); the `doorward.admin` permission granted to admin company-wide. Change the seed password before any real use.
+- Seed (`pnpm db:seed`): company `Default`; scope `Application`; groups `Admin` and `Everyone`; the `doorward.admin` permission; an admin user from `DOORWARD_ADMIN_USERNAME` / `DOORWARD_ADMIN_PASSWORD` (argon2id; local default `admin` / `changeme`, refused in production).
 - TypeORM entities live in `apps/api/src/infrastructure/database/entities/` (one folder). `synchronize: false`. `pnpm db:scaffold` checks the live `users` table list against that list.
 
 ## Proto (`packages/proto`)

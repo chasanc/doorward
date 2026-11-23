@@ -12,7 +12,7 @@ Administrators use the web console to create user accounts, organize users into 
 
 - **One authorization question.** Permissions are dotted names you define, such as `invoice.approve`. You grant a permission to a user or a group, either company-wide or at a specific scope. Your application calls `Check` and gets a yes/no answer along with the exact grant that matched.
 - **One process, two APIs.** The same NestJS server listens for REST on port `3001` and gRPC on port `5581`. The Next.js console uses JSON over REST, while backend services use protobuf over gRPC. The protobuf definitions in `packages/proto` serve as the shared contract.
-- **Your own database.** Ready-to-run SQL scripts create eight tables in PostgreSQL or SQL Server. Every update and deletion is recorded in `users.audit_log` inside the same database transaction. Passwords are hashed with argon2id.
+- **Your own database.** Versioned SQL migrations create the schema (eleven tables) in PostgreSQL or SQL Server. Every update and deletion is recorded in `users.audit_log` inside the same database transaction. Passwords are hashed with argon2id.
 - **Ready-to-use client examples.** Working examples are included for C#, C++, Rust, Node.js, and curl. For any other language, generate a client directly from the `.proto` file.
 
 Across the codebase, database schema, and UI, access rights are called **Permissions**.
@@ -55,6 +55,9 @@ Install dependencies, generate the local environment files, and start the dev se
 ```bash
 pnpm install
 node scripts/write-local-env.mjs
+pnpm --filter @doorward/domain build && pnpm --filter @doorward/api build   # db:migrate runs the built CLI
+pnpm db:migrate   # create the schema in your empty `doorward` database
+pnpm db:seed      # default company and the admin user
 pnpm dev
 ```
 

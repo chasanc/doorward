@@ -33,6 +33,9 @@ export default function loadEnv() {
     rateLimitMax: Number(env.RATE_LIMIT_MAX),
     rateLimitWindowSeconds: Number(env.RATE_LIMIT_WINDOW_SECONDS),
     loginRateLimitMax: Number(env.LOGIN_RATE_LIMIT_MAX ?? process.env.LOGIN_RATE_LIMIT_MAX ?? 10),
+    // Off unless "true": production runs `pnpm db:migrate` itself; Compose and dev opt in.
+    autoMigrate: (env.AUTO_MIGRATE ?? process.env.AUTO_MIGRATE ?? '').trim() === 'true',
+    autoSeed: (env.AUTO_SEED ?? process.env.AUTO_SEED ?? '').trim() === 'true',
     dbPoolMax: Number(env.DB_POOL_MAX ?? 20),
     dbConnectTimeoutMs: Number(env.DB_CONNECT_TIMEOUT_MS ?? 5000),
     trustProxy: parseTrustProxy(env.TRUST_PROXY ?? process.env.TRUST_PROXY),

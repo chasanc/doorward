@@ -40,8 +40,9 @@ POSTGRES_HOST_PORT=5433 pnpm compose:up
 
 ### Database initialization
 
-- The **PostgreSQL** profile applies `db/postgres/02` through `04` automatically (the Postgres container creates `doorward` on startup).
-- The **SQL Server** profile runs `db/mssql/01` through `04` via `deploy/compose/mssql-init.sh`.
+- The **PostgreSQL** profile starts an empty `doorward` database.
+- The **SQL Server** profile creates the login and database via `deploy/compose/mssql-init.sh`.
+- In both cases the API creates the schema and the demo admin when it starts (`AUTO_MIGRATE` and `AUTO_SEED`, which Compose turns on). See [database.md](database.md).
 
 Never apply both SQL packs to the same database instance.
 
@@ -61,7 +62,7 @@ By default, Compose configures `DATABASE_URL` to use the internal container host
 
 - **Web console:** Deploy to Vercel (see [`deploy/vercel/README.md`](../deploy/vercel/README.md)), which rewrites `/api/*` to your NestJS HTTP origin, or run it as a container alongside the API.
 - **API:** Deploy on Docker Compose, AWS, GCP, Fly.io, Railway, Render, or any long-lived container platform. Expose HTTP (`3001`) and gRPC (`5581`). Vercel cannot host the API because gRPC requires a long-lived socket.
-- **Database:** Apply `db/postgres` to Supabase or any managed PostgreSQL instance, **or** apply `db/mssql` to SQL Server / Azure SQL. Then set `DATABASE_KIND` and `DATABASE_URL`.
+- **Database:** Use Supabase or any managed PostgreSQL instance, **or** SQL Server / Azure SQL. Set `DATABASE_KIND` and `DATABASE_URL`, then run `pnpm db:migrate` and `pnpm db:seed` (see [database.md](database.md)).
 
 ### Enabling SSO and two-step verification in containers
 
@@ -90,14 +91,14 @@ Run the API container behind an HTTPS load balancer. Starting-point Terraform co
 | **gRPC (`5581`)** | ALB target group with gRPC protocol, or an internal NLB | GKE internal load balancer, or private VPC networking |
 | **Web console** | Separate ECS service or Vercel | Separate GKE workload or Vercel |
 
-**AWS Terraform notes:** The example provisions an ECS service, an RDS PostgreSQL database, an HTTPS ALB, encrypted CloudWatch logs, and a Secrets Manager secret holding the four SSO values. It expects an existing VPC and ACM certificate. After the first `terraform apply`, run `db/postgres/03` and `04` against the `db_address` output from inside the VPC, then point DNS at `alb_dns_name`. Store your Terraform state in an encrypted bucket because it contains generated secrets.
+**AWS Terraform notes:** The example provisions an ECS service, an RDS PostgreSQL database, an HTTPS ALB, encrypted CloudWatch logs, and a Secrets Manager secret holding the four SSO values. It expects an existing VPC and ACM certificate. The API applies pending migrations when it starts (`AUTO_MIGRATE=true`). After the first `terraform apply`, run `pnpm db:seed` against the `db_address` output from inside the VPC, with a real `DOORWARD_ADMIN_PASSWORD`, then point DNS at `alb_dns_name`. Store your Terraform state in an encrypted bucket because it contains generated secrets.
 
-**GCP Terraform notes:** The example provisions a Cloud Run service, a private Cloud SQL PostgreSQL 16 instance, and one Secret Manager entry per secret. It expects an existing VPC network, subnet, and pushed container image. After the first `terraform apply`, run `db/postgres/03` and `04` against `db_private_ip` from inside the VPC (for example, using the Cloud SQL Auth Proxy with `--private-ip` from a VM), then map your custom domain and set `oidc_issuer`. Store your Terraform state in an encrypted bucket.
+**GCP Terraform notes:** The example provisions a Cloud Run service, a private Cloud SQL PostgreSQL 16 instance, and one Secret Manager entry per secret. It expects an existing VPC network, subnet, and pushed container image. The API applies pending migrations when it starts (`AUTO_MIGRATE=true`). After the first `terraform apply`, run `pnpm db:seed` against `db_private_ip`, with a real `DOORWARD_ADMIN_PASSWORD`, from inside the VPC (for example, using the Cloud SQL Auth Proxy with `--private-ip` from a VM), then map your custom domain and set `oidc_issuer`. Store your Terraform state in an encrypted bucket.
 
 ### Operational notes
 
 - **Cloud Run and gRPC:** Cloud Run only exposes a single port per service, so the GCP example serves HTTP only. If you need gRPC alongside HTTP, use GKE or a Compute Engine VM.
-- **Database migrations:** Apply the SQL scripts in `db/postgres` (or `db/mssql`) manually or via a one-off job before starting the API for the first time. The API never runs schema migrations automatically.
+- **Database migrations:** The API refuses to start when the schema is behind or ahead of its code. Run `pnpm db:migrate` as a one-off job before a release, or set `AUTO_MIGRATE=true` (both Terraform examples do) to apply pending migrations at start. Seed an admin once with `pnpm db:seed`.
 - **Health checks:** Point your load balancer health check at `GET /api/health` on port `3001`.
 - **Logs:** The API writes JSON logs to stdout and your platform collects them. Both Terraform examples set `LOG_HTTP_REQUESTS=false`, because the load balancer keeps its own access log and health checks would flood the API's. See [logging.md](logging.md) for retention and the other switches.
 - **Tracing (optional):** Set the Terraform variable `otlp_endpoint` (for example `http://collector:4318`) to send OpenTelemetry traces. It is empty by default, which keeps tracing off. The collector is not created by the examples, and the API must be able to reach it: on AWS, allow outbound port `4318` in the task's security group; on GCP, give Cloud Run VPC egress. See [logging.md](logging.md#tracing-optional-opentelemetry).

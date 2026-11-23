@@ -19,20 +19,8 @@ wait_for_sql() {
   done
 }
 
-already_seeded() {
-  "$SQLCMD" -C -S "$HOST" -U doorward -P "$DOORWARD_PASSWORD" -d doorward -h -1 -W -b \
-    -Q "SET NOCOUNT ON; SELECT TOP (1) user_name FROM users.[user] WHERE user_name = N'admin';" \
-    2>/dev/null | grep -q admin
-}
-
 wait_for_sql
-"$SQLCMD" -C -S "$HOST" -U sa -P "$SA_PASSWORD" -b -i "${SCRIPTS}/01_create_database.sql"
-
-if already_seeded; then
-  echo "doorward already seeded"
-  exit 0
-fi
-
-"$SQLCMD" -C -S "$HOST" -U doorward -P "$DOORWARD_PASSWORD" -d doorward -b -i "${SCRIPTS}/03_create_schema_users.sql"
-"$SQLCMD" -C -S "$HOST" -U doorward -P "$DOORWARD_PASSWORD" -d doorward -b -i "${SCRIPTS}/04_seed.sql"
-echo "doorward MSSQL pack applied"
+# Creates the login and database only. The schema and demo data come from the API (AUTO_MIGRATE / AUTO_SEED)
+# or from `pnpm db:migrate` and `pnpm db:seed`.
+"$SQLCMD" -C -S "$HOST" -U sa -P "$SA_PASSWORD" -b -i "${SCRIPTS}/bootstrap/01_create_database.sql"
+echo "doorward MSSQL database ready"

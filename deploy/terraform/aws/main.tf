@@ -329,6 +329,7 @@ resource "aws_ecs_task_definition" "api" {
         GRPC_TLS                     = "false"
         GRPC_TLS_REQUIRE_CLIENT_CERT = "false"
         DATABASE_KIND                = "postgres"
+        AUTO_MIGRATE                 = "true" # a fresh database needs the schema; switch to a one-off `db:migrate` task for managed rollouts
         JWT_EXPIRES_IN               = "1d"
         COOKIE_SECURE                = "true"
         RATE_LIMIT_ENABLED           = "true"

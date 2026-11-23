@@ -10,6 +10,8 @@ import cookieParser from 'cookie-parser';
 import { Logger } from 'nestjs-pino';
 import { ServerCredentials } from '@grpc/grpc-js';
 import { AppModule } from './app.module.js';
+import loadEnv from './config/env.js';
+import { ensureSchema } from './infrastructure/database/migrate/startup.js';
 import { createRateLimitMiddleware } from './http/rate-limit.middleware.js';
 import { mountOidc } from './infrastructure/oidc/mount-oidc.js';
 import { quietUntilReady } from './logging/startup-quiet.js';
@@ -37,6 +39,16 @@ function grpcTls(config: ConfigService): ServerCredentials {
 }
 
 async function bootstrap() {
+  if (withDatabase) {
+    const settings = loadEnv();
+    await ensureSchema({
+      kind: settings.databaseKind,
+      url: settings.databaseUrl,
+      autoMigrate: settings.autoMigrate,
+      autoSeed: settings.autoSeed,
+      log: (message) => console.log(`migrate: ${message}`),
+    });
+  }
   // Buffer until the pino logger below is installed, so boot messages are not printed in Nest's format.
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   const config = app.get(ConfigService);
