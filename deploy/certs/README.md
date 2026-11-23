@@ -12,8 +12,8 @@ Optional `DOORWARD_CERT_HOST` (SAN/CN, default `localhost`) and `DOORWARD_CERT_D
 
 ## Use
 
-- `GRPC_TLS=false` — insecure (local default).
-- `GRPC_TLS=true` — load `GRPC_TLS_CA`, `GRPC_TLS_CERT`, `GRPC_TLS_KEY`.
+- `GRPC_TLS=false`: insecure (local default).
+- `GRPC_TLS=true`: load `GRPC_TLS_CA`, `GRPC_TLS_CERT`, `GRPC_TLS_KEY`.
 - Optional mTLS: `GRPC_TLS_REQUIRE_CLIENT_CERT=true` and the client PEMs under `deploy/certs/client/`.
 
 Production: TLS **and** `GRPC_API_KEY`. The PEMs encrypt the wire; the API key identifies the integrating app.

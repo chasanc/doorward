@@ -41,10 +41,12 @@ The full text with reasons is in [docs/domain.md](docs/domain.md#rules).
 
 ## Auth (do not mix secrets)
 
-- `JWT_SECRET`: REST admin session/JWT only. Required; no default in source.
-- `GRPC_API_KEY`: integrating apps, metadata `x-api-key` (and `company-key` in multi-company mode). Empty = no check (local). Not TLS.
+- `JWT_SECRET`: REST admin session/JWT only. Required; no default in source. Production refuses `change-me`.
+- `GRPC_API_KEY`: manage key for integrating apps, metadata `x-api-key` (and `company-key` in multi-company mode). Empty = no check (local). Not TLS. Production refuses an empty key unless `DOORWARD_DEMO=true`.
+- `GRPC_CHECK_API_KEY`: optional. Same header, but only `Check` and `BatchCheck`. Must differ from `GRPC_API_KEY`.
+- `DATABASE_SSL`: `true` encrypts the database connection. Default off.
 - `GRPC_TLS`: encrypt gRPC. PEM paths `GRPC_TLS_CA`, `GRPC_TLS_CERT`, `GRPC_TLS_KEY`. Default false.
-- Production: TLS **and** API key. Do not reuse `JWT_SECRET` for gRPC.
+- Production: TLS **and** the manage key. Do not reuse `JWT_SECRET` for gRPC.
 
 ## Environment
 
@@ -60,6 +62,8 @@ GRPC_TLS_CERT=../../deploy/certs/server/server.crt
 GRPC_TLS_KEY=../../deploy/certs/server/server.key
 GRPC_TLS_REQUIRE_CLIENT_CERT=false
 GRPC_API_KEY=
+GRPC_CHECK_API_KEY=
+DATABASE_SSL=false
 DATABASE_KIND=postgres
 DATABASE_URL=postgresql://doorward:doorward@localhost:5432/doorward
 JWT_SECRET=change-me

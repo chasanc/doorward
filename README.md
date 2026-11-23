@@ -1,25 +1,38 @@
 # <img src="apps/web/src/app/icon.svg" alt="" width="36" align="absmiddle"> Doorward
 
-Doorward is a self-hosted service for managing **users**, **groups**, and **permissions**. A single NestJS process serves a REST API for the admin console and a gRPC API for your applications, backed by your own PostgreSQL or SQL Server database.
+Doorward is a self-hosted service for managing **users**, **groups**, and **permissions**. One NestJS process serves a REST API for the admin console and a gRPC API for your applications, backed by your own PostgreSQL or SQL Server database.
 
-Here is the local admin console after signing in. It shows who holds which permissions, where each grant comes from, and the audit history behind every change.
+Here is the local admin console right after sign-in. You can see who holds which permissions, where each grant comes from, and the audit history behind every change.
 
 ![Users: the admin account, its groups, two-step verification, and the company-wide doorward.admin grant](docs/images/users.png)
 
 ## How it works
 
-Administrators use the web console to create user accounts, organize users into groups, and grant or revoke permissions. Your applications do not query the database directly. Instead, they talk to `doorward` over gRPC (`doorward.v1`), or over REST with a bearer token if they only support HTTP.
+Administrators use the web console to create user accounts, organize people into groups, and grant or revoke permissions. Your applications talk to Doorward over gRPC (`doorward.v1`) instead of querying the database, or over REST with a bearer token if they only speak HTTP.
 
-- **One authorization question.** Permissions are dotted names you define, such as `invoice.approve`. You grant a permission to a user or a group, either company-wide or at a specific scope. Your application calls `Check` and gets a yes/no answer along with the exact grant that matched.
-- **One process, two APIs.** The same NestJS server listens for REST on port `3001` and gRPC on port `5581`. The Next.js console uses JSON over REST, while backend services use protobuf over gRPC. The protobuf definitions in `packages/proto` serve as the shared contract.
-- **Your own database.** Versioned SQL migrations create the schema (eleven tables) in PostgreSQL or SQL Server. Every update and deletion is recorded in `users.audit_log` inside the same database transaction. Passwords are hashed with argon2id.
-- **Ready-to-use client examples.** Working examples are included for C#, C++, Rust, Node.js, and curl. For any other language, generate a client directly from the `.proto` file.
+- **One authorization question:** You define dotted permission names like `invoice.approve` and grant them to a user or a group, either company-wide or at a specific scope. Your app calls `Check` and gets back a yes/no answer along with the exact grant that matched.
+- **One process, two APIs:** The same NestJS server listens for REST on port `3001` and gRPC on port `5581`. The Next.js console uses JSON over REST, and backend services use protobuf over gRPC. The `.proto` files in `packages/proto` define the shared contract.
+- **Your own database:** Versioned SQL migrations build the schema (eleven tables) in PostgreSQL or SQL Server. Doorward hashes passwords with argon2id and writes every update and deletion to `users.audit_log` inside the same database transaction.
+- **Client examples included:** The repo ships working examples for C#, C++, Rust, Node.js, and curl. For any other language, generate a client from the `.proto` file.
 
 Across the codebase, database schema, and UI, access rights are called **Permissions**.
 
+## When to use Doorward
+
+- You want to ask one question (may this user do this at this scope?) and see the exact grant that matched.
+- You run PostgreSQL or SQL Server and want a scope tree (where a parent grant covers its children) plus an admin console.
+- You want Doorward to store passwords and handle sign-in with OpenID Connect and TOTP.
+
+## When to pick something else
+
+- You need a full identity platform with password resets, invites, email verification, SAML, LDAP, SCIM, or federated sign-in with Google, Entra ID, or Okta. Look at Keycloak or Ory instead. Doorward stores passwords itself and does not broker external identity providers.
+- You need deny rules, wildcard permissions, nested groups, or a separate role model. In Doorward, grants are allow-only, groups are flat, and permission names match exact strings.
+- You need arbitrary relationships between objects like OpenFGA or SpiceDB. Doorward's scope tree only supports parent-covers-child inheritance.
+- You want an in-process library rather than a network service. Look at Casbin for that.
+
 ## Inside the admin console
 
-**Groups** are flat collections of users. A user automatically receives the grants of every active group they belong to.
+**Groups** are flat collections of users. Every active member inherits all grants assigned to their groups.
 
 ![Groups: the Admin group and its member](docs/images/groups.png)
 
@@ -27,17 +40,17 @@ Across the codebase, database schema, and UI, access rights are called **Permiss
 
 ![Permissions: the names apps check, including doorward.admin](docs/images/permissions.png)
 
-**Applications** are OpenID Connect clients that let users sign in through `doorward`. A fresh database starts with none; this local one has a client named `my app`.
+**Applications** are OpenID Connect clients that let users sign in through Doorward. A fresh database starts with none; the local screenshot below shows a client named `my app`.
 
 ![Applications: the OpenID Connect client my app, with its redirect URIs](docs/images/applications.png)
 
-**Scopes** form a tree that defines where a grant applies, such as application modules, customer areas, or physical locations like regions and buildings. A grant at a parent scope automatically covers every child scope beneath it (see [Scopes](docs/domain.md#scopes)). **Companies** are tenants. The Companies page stays hidden until `NEXT_PUBLIC_MULTI_COMPANY_MODE` is `true`, so the screenshot below was taken with that setting on.
+**Scopes** form a tree that defines where a grant applies, such as application modules, customer areas, or physical locations like regions and buildings. A grant at a parent scope covers every child scope beneath it (see [Scopes](docs/domain.md#scopes)). **Companies** are tenants. The Companies page stays hidden until you set `NEXT_PUBLIC_MULTI_COMPANY_MODE=true`.
 
 | Scopes | Companies |
 | --- | --- |
 | ![Scopes: the Application scope, the root of the tree](docs/images/scopes.png) | ![Companies: tenant records, shown with multi-company mode on](docs/images/companies.png) |
 
-The admin console stores the session in an `httpOnly` cookie named `doorward_token` rather than in `localStorage`. Both English and Spanish interfaces are built in.
+The admin console stores sessions in an `httpOnly` cookie named `doorward_token` instead of `localStorage`, and includes both English and Spanish translations.
 
 | Sign in | Language |
 | --- | --- |
@@ -50,7 +63,7 @@ Prerequisites:
 - Node.js 24 LTS (`>=24.21.0 <25`), matching `.nvmrc`
 - pnpm 12 (see `packageManager` in `package.json`)
 
-Install dependencies, generate the local environment files, and start the dev servers:
+Install dependencies, generate the local `.env` files, run migrations and seed data, and start the dev servers:
 
 ```bash
 pnpm install
@@ -61,15 +74,15 @@ pnpm db:seed      # default company and the admin user
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and sign in with `admin` / `changeme`. Change this password before deploying to any shared environment. The REST API runs on port `3001` (with OpenAPI docs at `/api/docs`), and gRPC listens on port `5581`.
+Open [http://localhost:3000](http://localhost:3000) and sign in with `admin` / `changeme`. Change that password before you deploy to any shared environment. The REST API listens on port `3001` (with OpenAPI docs at `/api/docs`), and gRPC listens on port `5581`.
 
-`write-local-env.mjs` creates the gitignored `.env` files with local defaults. Both the API and web app exit on startup if a required variable is missing. Keep `GRPC_API_KEY` separate from `JWT_SECRET`, and set `COOKIE_SECURE=true` only when serving over HTTPS. See [docs/environment.md](docs/environment.md) for the full variable reference.
+`write-local-env.mjs` creates gitignored `.env` files with local defaults. Both the API and the web app exit at startup if a required variable is missing. Keep `GRPC_API_KEY` separate from `JWT_SECRET`, and set `COOKIE_SECURE=true` only when serving over HTTPS. See [docs/environment.md](docs/environment.md) for the full list of variables.
 
 ## Calling Doorward from your application
 
-Backend services should connect over gRPC. When `GRPC_API_KEY` is configured, pass it in the `x-api-key` metadata header. Call `Authenticate` to verify a user's credentials, then call `Check` to verify their permissions. Do not pass the admin session cookie to backend apps, and do not reuse `JWT_SECRET` as your gRPC API key.
+Backend services should connect over gRPC. When `GRPC_API_KEY` is set on the server, pass it in the `x-api-key` metadata header to call any RPC. If a service only needs permission checks, give it `GRPC_CHECK_API_KEY` instead; that key can only call `Check` and `BatchCheck`. Call `Authenticate` to verify credentials, then call `Check` to verify permissions. Never forward the admin session cookie to backend apps or reuse `JWT_SECRET` as a gRPC key.
 
-If an application can only speak HTTP, call `POST /api/auth/token` with an account that holds the `doorward.admin` permission, then send `Authorization: Bearer <token>` on requests to `/api/v1`. The session cookie returned by `POST /api/auth/login` is intended for the admin console.
+If an app can only speak HTTP, send the check-only key in `x-api-key` to `POST /api/v1/check`. A signed-in user can also call that route for their own user ID. Managing users and grants over HTTP requires a bearer token from `POST /api/auth/token` (using an account with `doorward.admin`), sent as `Authorization: Bearer <token>` on `/api/v1`. The session cookie from `POST /api/auth/login` is for the admin console.
 
 | Language | Example | Transport |
 | --- | --- | --- |
@@ -79,7 +92,7 @@ If an application can only speak HTTP, call `POST /api/auth/token` with an accou
 | Node.js | [`examples/grpc-client`](examples/grpc-client) | gRPC |
 | curl + jq | [`examples/rest`](examples/rest) | REST bearer token |
 
-Every example runs the same walkthrough: authenticate a user, check `doorward.admin`, list the user's grants and all users, and ensure four sample permissions exist. New users have no permissions until you grant them. See [docs/integrate.md](docs/integrate.md) for the full integration flow.
+Every example runs the same walkthrough: authenticate a user, check `doorward.admin`, list the user's grants and all users, and create four sample permissions if they are missing. New users have no permissions until you grant them. See [docs/integrate.md](docs/integrate.md) for the full integration guide.
 
 ## Self-hosting with Docker Compose
 
@@ -89,9 +102,9 @@ Start PostgreSQL, the API (`3001` HTTP, `5581` gRPC), and the web console (`3000
 pnpm compose:up
 ```
 
-To run with SQL Server instead of PostgreSQL, run `pnpm compose:up:mssql`. If port `5432` is already occupied on your machine, override it: `POSTGRES_HOST_PORT=5433 pnpm compose:up`.
+To run SQL Server instead of PostgreSQL, use `pnpm compose:up:mssql`. If port `5432` is already taken on your machine, override it with `POSTGRES_HOST_PORT=5433 pnpm compose:up`.
 
-You can deploy the **web** app to Vercel, but the NestJS API requires a long-lived host because it serves a persistent gRPC socket. See [docs/deploy.md](docs/deploy.md) for full deployment options.
+You can host the **web** app on Vercel, while the NestJS API needs a long-lived host for its gRPC socket. See [docs/deploy.md](docs/deploy.md) for deployment options.
 
 ## Repository layout
 
@@ -106,23 +119,23 @@ You can deploy the **web** app to Vercel, but the NestJS API requires a long-liv
 | `docs/` | Guides and reference documentation |
 | `deploy/compose` | Docker Compose setup (`deploy/vercel` is web-only) |
 
-For the contributor glossary and architecture summary, see [CONTEXT.md](CONTEXT.md).
+For the contributor glossary and architecture summary, read [CONTEXT.md](CONTEXT.md).
 
 ## Security
 
-The seeded admin account uses `admin` / `changeme`. Before exposing `doorward` to a network, change that password, generate a strong `JWT_SECRET`, enable gRPC TLS, and configure `GRPC_API_KEY`. See [SECURITY.md](SECURITY.md) for the full checklist and vulnerability reporting instructions.
+The seeded admin account uses `admin` / `changeme`. Before exposing Doorward to a network, change that password, generate a strong `JWT_SECRET`, turn on gRPC TLS, and set `GRPC_API_KEY`. See [SECURITY.md](SECURITY.md) for the checklist and vulnerability reporting instructions.
 
 ## Documentation
 
-- [Guide](docs/guide.md) — visual walkthrough with diagrams covering architecture, initial setup, `Check`, SSO, and two-step verification
-- [Domain](docs/domain.md) — core concepts: users, groups, permissions, grants, scopes, and `Check`
-- [Database](docs/database.md) — the `users` schema and the PostgreSQL / SQL Server packs
-- [gRPC](docs/grpc.md) — `doorward.v1` services, TLS setup, and API key authentication
-- [Integrate](docs/integrate.md) — how backend applications authenticate users and check permissions
-- [Sign in with Doorward (OpenID Connect)](docs/sso.md) — SSO setup, client configuration, claims, two-step verification, and troubleshooting
-- [Logging](docs/logging.md) — JSON logs on stdout, request IDs, what is redacted, and where the logs go on Compose, AWS, and GCP
-- [Environment](docs/environment.md) — reference for all required and optional environment variables
-- [Deploy](docs/deploy.md) — self-hosting with Docker Compose, cloud deployments, and Vercel
+- [Guide](docs/guide.md): visual walkthrough with diagrams covering architecture, initial setup, `Check`, SSO, and two-step verification
+- [Domain](docs/domain.md): core concepts (users, groups, permissions, grants, scopes, and `Check`)
+- [Database](docs/database.md): the `users` schema and the PostgreSQL / SQL Server packs
+- [gRPC](docs/grpc.md): `doorward.v1` services, TLS setup, and API key authentication
+- [Integrate](docs/integrate.md): how backend apps authenticate users and check permissions
+- [Sign in with Doorward (OpenID Connect)](docs/sso.md): SSO setup, client configuration, claims, two-step verification, and troubleshooting
+- [Logging](docs/logging.md): JSON logs on stdout, request IDs, redaction, and log collection on Compose, AWS, and GCP
+- [Environment](docs/environment.md): reference for all required and optional environment variables
+- [Deploy](docs/deploy.md): self-hosting with Docker Compose, cloud deployments, and Vercel
 
 ## Contributing and license
 

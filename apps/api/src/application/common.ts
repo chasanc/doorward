@@ -115,7 +115,7 @@ export async function requireCompany(
   return company;
 }
 
-/** Company confinement for gRPC callers in multi-company mode. REST and single-company calls are not confined. */
+/** Company confinement in multi-company mode. REST uses the signed-in company; gRPC uses company-key. */
 @Injectable()
 export class Tenancy {
   constructor(private readonly config: ConfigService) {}

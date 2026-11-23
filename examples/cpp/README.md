@@ -10,7 +10,7 @@ Needs CMake, a C++17 compiler, gRPC and protobuf. On Debian or Ubuntu:
 sudo apt install cmake libgrpc++-dev protobuf-compiler-grpc libprotobuf-dev
 ```
 
-Build and run against an Doorward API with gRPC on 5581:
+Build and run against a Doorward API with gRPC on 5581:
 
 ```bash
 cmake -S . -B build

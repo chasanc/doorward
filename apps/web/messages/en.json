@@ -25,7 +25,8 @@
     "PASSWORD": "Password",
     "HINT": "Only users who hold the doorward.admin permission company-wide can sign in to this admin. The session is an httpOnly doorward_token cookie.",
     "PENDING": "Signing in…",
-    "FAILED": "Login failed"
+    "FAILED": "Login failed",
+    "CODE": "Code from the app, if this account uses two-step verification"
   },
   "LANGUAGES": {
     "CHANGED": "Language changed to English",

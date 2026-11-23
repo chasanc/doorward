@@ -16,6 +16,7 @@ import { createTypeOrmOptions } from './typeorm.options.js';
           url,
           poolMax: config.getOrThrow<number>('dbPoolMax'),
           connectTimeoutMs: config.getOrThrow<number>('dbConnectTimeoutMs'),
+          ssl: config.getOrThrow<boolean>('databaseSsl'),
         });
       },
     }),

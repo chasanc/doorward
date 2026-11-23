@@ -18,15 +18,20 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     },
   });
   const text = await response.text();
-  const data = text
-    ? (JSON.parse(text) as T & { message?: string | string[] })
-    : ({} as T);
+  const requestId = response.headers.get('X-Request-Id') ?? undefined;
+  let data: T & { message?: string | string[] };
+  try {
+    data = text
+      ? (JSON.parse(text) as T & { message?: string | string[] })
+      : ({} as T & { message?: string | string[] });
+  } catch {
+    throw new ApiError(response.statusText || 'Response was not JSON', response.status, requestId);
+  }
   if (!response.ok) {
     const message = Array.isArray((data as { message?: string | string[] }).message)
       ? (data as { message: string[] }).message.join(', ')
       : (data as { message?: string }).message || response.statusText;
     // Only server faults get the ID on screen: it is what an admin searches the logs for.
-    const requestId = response.headers.get('X-Request-Id') ?? undefined;
     const shown = response.status >= 500 && requestId ? `${message} (Request ID: ${requestId})` : message;
     throw new ApiError(shown, response.status, requestId);
   }

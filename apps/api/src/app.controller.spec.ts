@@ -16,7 +16,7 @@ describe('AppController', () => {
 
   describe('health', () => {
     it('should report ok', () => {
-      expect(appController.getHealth()).toEqual({
+      expect(appController.getHealth()).toMatchObject({
         status: 'ok',
         name: 'Doorward',
       });

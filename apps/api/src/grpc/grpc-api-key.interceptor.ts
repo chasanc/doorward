@@ -9,6 +9,7 @@ import { RpcException } from '@nestjs/microservices';
 import { status as GrpcStatus } from '@grpc/grpc-js';
 import type { Metadata } from '@grpc/grpc-js';
 import type { Observable } from 'rxjs';
+import { apiKeyRole, grpcAllows } from '../auth/api-key-role.js';
 import { logAuthFailure } from '../logging/auth-failure.js';
 
 @Injectable()
@@ -19,20 +20,22 @@ export class GrpcApiKeyInterceptor implements NestInterceptor {
     if (context.getType() !== 'rpc') {
       return next.handle();
     }
-    const expected = this.config.getOrThrow<string>('grpcApiKey');
-    if (!expected) {
+    const role = apiKeyRole(
+      {
+        manage: this.config.getOrThrow<string>('grpcApiKey'),
+        check: this.config.getOrThrow<string>('grpcCheckApiKey'),
+      },
+      firstMetadata(context.switchToRpc().getContext<Metadata>(), 'x-api-key'),
+    );
+    const method = context.getHandler()?.name ?? '';
+    if (grpcAllows(role, method)) {
       return next.handle();
     }
-    const metadata = context.switchToRpc().getContext<Metadata>();
-    const provided = firstMetadata(metadata, 'x-api-key');
-    if (provided !== expected) {
-      logAuthFailure(this.config, 'invalid_api_key');
-      throw new RpcException({
-        code: GrpcStatus.UNAUTHENTICATED,
-        message: 'invalid api key',
-      });
-    }
-    return next.handle();
+    logAuthFailure(this.config, role === 'check' ? 'check_only_key' : 'invalid_api_key');
+    throw new RpcException({
+      code: GrpcStatus.UNAUTHENTICATED,
+      message: role === 'check' ? 'check-only api key' : 'invalid api key',
+    });
   }
 }
 

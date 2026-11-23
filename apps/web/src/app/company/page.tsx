@@ -23,7 +23,7 @@ export default async function CompanyPage() {
           { key: 'contactPerson', label: t('FIELDS.CONTACT') },
           { key: 'contactPhone', label: t('FIELDS.PHONE') },
           { key: 'active', label: t('FIELDS.ACTIVE'), kind: 'checkbox' },
-          { key: 'requireMfa', label: t('FIELDS.REQUIRE_MFA'), kind: 'checkbox' },
+          { key: 'requireMfa', label: t('FIELDS.REQUIRE_MFA'), kind: 'checkbox', defaultValue: 'false' },
         ]}
       />
     </AppShell>

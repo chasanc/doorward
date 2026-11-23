@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'dotenv';
+import { assertProductionSecrets } from './production-secrets.js';
 
 const requiredKeys = [
   'HTTP_HOST',
@@ -109,6 +110,13 @@ export function apiEnv(): Record<string, string> {
       throw new Error(`${key} must be a number in ${files.join(' and ')}`);
     }
   }
+  assertProductionSecrets({
+    nodeEnv: process.env.NODE_ENV,
+    demo: process.env.DOORWARD_DEMO,
+    manageKey: merged.GRPC_API_KEY,
+    checkKey: merged.GRPC_CHECK_API_KEY ?? process.env.GRPC_CHECK_API_KEY ?? '',
+    jwtSecret: merged.JWT_SECRET,
+  });
   for (const [key, value] of Object.entries(merged)) {
     process.env[key] = value;
   }

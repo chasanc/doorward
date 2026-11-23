@@ -10,6 +10,7 @@ export function LoginForm() {
   const router = useRouter();
   const [userName, setUserName] = useState('admin');
   const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
 
@@ -20,7 +21,11 @@ export function LoginForm() {
     try {
       await api('/api/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ username: userName, password }),
+        body: JSON.stringify({
+          username: userName,
+          password,
+          ...(code.trim() ? { code: code.trim() } : {}),
+        }),
       });
       router.push('/');
       router.refresh();
@@ -54,6 +59,17 @@ export function LoginForm() {
           onChange={(event) => setPassword(event.target.value)}
           className="rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
           required
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-sm">
+        {t('LOGINS.CODE')}
+        <input
+          name="code"
+          autoComplete="one-time-code"
+          inputMode="text"
+          value={code}
+          onChange={(event) => setCode(event.target.value)}
+          className="rounded-md border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
         />
       </label>
       {error ? <p className="text-sm text-red-600">{error}</p> : null}

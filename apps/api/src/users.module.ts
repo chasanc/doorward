@@ -17,11 +17,13 @@ import { UsersService } from './application/users.service.js';
 import { AdminGuard } from './auth/admin.guard.js';
 import { AuthController } from './auth/auth.controller.js';
 import { jwtExpiresInSeconds } from './auth/auth.constants.js';
+import { CheckRouteGuard } from './auth/check-route.guard.js';
 import { JwtAuthGuard } from './auth/jwt-auth.guard.js';
 import { LoginRateLimiter } from './auth/login-rate-limiter.js';
 import { GrpcApiKeyInterceptor } from './grpc/grpc-api-key.interceptor.js';
 import { DoorwardGrpcController } from './grpc/doorward.grpc.controller.js';
 import { AppErrorFilter } from './http/app-error.filter.js';
+import { CheckController } from './http/check.controller.js';
 import { V1Controller } from './http/v1.controller.js';
 
 // REST and gRPC are two thin layers over the same application services.
@@ -37,7 +39,7 @@ import { V1Controller } from './http/v1.controller.js';
       }),
     }),
   ],
-  controllers: [AuthController, V1Controller, DoorwardGrpcController],
+  controllers: [AuthController, V1Controller, CheckController, DoorwardGrpcController],
   providers: [
     { provide: APP_FILTER, useClass: AppErrorFilter },
     Tenancy,
@@ -54,6 +56,7 @@ import { V1Controller } from './http/v1.controller.js';
     GrantsService,
     JwtAuthGuard,
     AdminGuard,
+    CheckRouteGuard,
     GrpcApiKeyInterceptor,
     LoginRateLimiter,
   ],

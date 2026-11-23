@@ -45,6 +45,16 @@ resource "random_password" "cookie" {
   special = false
 }
 
+resource "random_password" "grpc_api_key" {
+  length  = 48
+  special = false
+}
+
+resource "random_password" "grpc_check_api_key" {
+  length  = 48
+  special = false
+}
+
 resource "aws_kms_key" "api" {
   description         = "${var.name} secrets"
   enable_key_rotation = true
@@ -63,6 +73,8 @@ resource "aws_secretsmanager_secret_version" "api" {
       DATABASE_URL        = "postgresql://doorward:${random_password.db.result}@${aws_db_instance.db.address}:5432/doorward"
       JWT_SECRET          = random_password.jwt.result
       TOTP_ENCRYPTION_KEY = random_password.totp.result
+      GRPC_API_KEY        = random_password.grpc_api_key.result
+      GRPC_CHECK_API_KEY  = random_password.grpc_check_api_key.result
     },
     local.sso ? {
       OIDC_COOKIE_KEYS      = random_password.cookie.result
@@ -128,16 +140,13 @@ resource "aws_db_subnet_group" "db" {
   subnet_ids = var.private_subnet_ids
 }
 
-# shortcut: the API's TypeORM setup has no ssl option, so RDS cannot force TLS
-# yet. The database is private and only the API task can reach it. Upgrade:
-# add an ssl option to the API and set rds.force_ssl back to 1.
 resource "aws_db_parameter_group" "db" {
   name   = "${var.name}-pg16"
   family = "postgres16"
 
   parameter {
     name  = "rds.force_ssl"
-    value = "0"
+    value = "1"
   }
 }
 
@@ -329,6 +338,7 @@ resource "aws_ecs_task_definition" "api" {
         GRPC_TLS                     = "false"
         GRPC_TLS_REQUIRE_CLIENT_CERT = "false"
         DATABASE_KIND                = "postgres"
+        DATABASE_SSL                 = "true"
         AUTO_MIGRATE                 = "true" # a fresh database needs the schema; switch to a one-off `db:migrate` task for managed rollouts
         JWT_EXPIRES_IN               = "1d"
         COOKIE_SECURE                = "true"
@@ -346,7 +356,7 @@ resource "aws_ecs_task_definition" "api" {
     ) : { name = k, value = v }]
 
     secrets = [for k in concat(
-      ["DATABASE_URL", "JWT_SECRET", "TOTP_ENCRYPTION_KEY"],
+      ["DATABASE_URL", "JWT_SECRET", "TOTP_ENCRYPTION_KEY", "GRPC_API_KEY", "GRPC_CHECK_API_KEY"],
       local.sso ? ["OIDC_COOKIE_KEYS", "OIDC_SIGNING_KEY_JSON"] : []
     ) : { name = k, valueFrom = "${aws_secretsmanager_secret.api.arn}:${k}::" }]
 

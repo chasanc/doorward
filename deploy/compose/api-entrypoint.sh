@@ -58,7 +58,9 @@ mkdir -p "$root/apps/api"
   line GRPC_TLS_KEY optional
   line GRPC_TLS_REQUIRE_CLIENT_CERT required
   line GRPC_API_KEY optional
+  line GRPC_CHECK_API_KEY optional
   line DATABASE_KIND required
+  line DATABASE_SSL optional
   line DATABASE_URL required
   line JWT_SECRET required
   line JWT_EXPIRES_IN required

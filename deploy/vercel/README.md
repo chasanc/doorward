@@ -1,6 +1,6 @@
 # Vercel (web only)
 
-Host `apps/web` on Vercel. Do **not** host `apps/api` here — Nest always binds gRPC.
+Host `apps/web` on Vercel. Do **not** host `apps/api` here, because Nest always binds gRPC.
 
 ## Project
 
