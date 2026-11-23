@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslations } from 'next-intl';
-import { ApiError, api } from '@/lib/api';
+import { ApiError, api, apiAll } from '@/lib/api';
 import type { GroupRow, Page, UserRow } from '@/lib/types';
 import { fieldClass, primaryClass } from '@/lib/ui';
 
@@ -84,8 +84,8 @@ export function GroupMembers({ groupId }: { groupId: string }) {
   const t = useTranslations();
   const [members, setMembers] = useState<UserRow[]>([]);
   const load = () =>
-    api<Page<UserRow>>(`/api/v1/groups/${groupId}/members?pageSize=200`)
-      .then((page) => setMembers(page.items))
+    apiAll<UserRow>(`/api/v1/groups/${groupId}/members`)
+      .then(setMembers)
       .catch(() => setMembers([]));
 
   useEffect(() => {
