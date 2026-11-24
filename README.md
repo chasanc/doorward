@@ -25,7 +25,7 @@ Across the codebase, database schema, and UI, access rights are called **Permiss
 
 ## Not in this version yet
 
-Password reset, invites, email verification, SCIM, and sign-in through Google, Entra ID, Okta, SAML, or LDAP are not built. Doorward stores passwords itself and signs users in as an OpenID Connect provider. Keycloak and Ory already ship those account and directory features if you need them now.
+Password reset, invites, email verification, SCIM, and sign-in through Google, Entra ID, Okta, or SAML are not built. LDAP sign-in with group sync is available but optional; see [docs/environment.md](docs/environment.md#directory-sign-in-ldap). Doorward stores passwords itself and signs users in as an OpenID Connect provider. Keycloak and Ory already ship those account and directory features if you need them now.
 
 ## Rules a Check follows today
 

@@ -59,5 +59,13 @@ export default function loadEnv() {
     oidcPkceOptional: (env.OIDC_PKCE_OPTIONAL ?? process.env.OIDC_PKCE_OPTIONAL) === 'true',
     // Encrypts two-step verification secrets in the database. Without it nobody can enrol.
     totpEncryptionKey: (env.TOTP_ENCRYPTION_KEY ?? process.env.TOTP_ENCRYPTION_KEY ?? '').trim(),
+    // Directory sign-in is off unless LDAP_URL is set. Optional, like the OIDC keys above.
+    ldapUrl: (env.LDAP_URL ?? process.env.LDAP_URL ?? '').trim(),
+    ldapBindDn: (env.LDAP_BIND_DN ?? process.env.LDAP_BIND_DN ?? '').trim(),
+    ldapBindPassword: env.LDAP_BIND_PASSWORD ?? process.env.LDAP_BIND_PASSWORD ?? '',
+    ldapUserBase: (env.LDAP_USER_BASE ?? process.env.LDAP_USER_BASE ?? '').trim(),
+    ldapUserFilter: (env.LDAP_USER_FILTER ?? process.env.LDAP_USER_FILTER ?? '(uid={username})').trim(),
+    ldapCompanyKey: (env.LDAP_COMPANY_KEY ?? process.env.LDAP_COMPANY_KEY ?? '').trim(),
+    ldapGroupMap: (env.LDAP_GROUP_MAP ?? process.env.LDAP_GROUP_MAP ?? '').trim(),
   };
 }

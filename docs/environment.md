@@ -102,6 +102,35 @@ TOTP_ENCRYPTION_KEY=
 
 - **`TOTP_ENCRYPTION_KEY`**: A random string of 32 or more characters used to encrypt authenticator secrets in `users.user_totp` (AES-256-GCM). Users cannot enroll in two-step verification without it. Do not change this key after users enroll, or they will be locked out until an administrator resets their enrollment.
 
+## Directory sign-in (LDAP)
+
+Off unless `LDAP_URL` is set. Run `pnpm db:migrate` first: it adds `users.user.auth_source`.
+
+```env
+LDAP_URL=ldaps://ldap.example.com
+LDAP_BIND_DN=cn=doorward,ou=service,dc=example,dc=com
+LDAP_BIND_PASSWORD=
+LDAP_USER_BASE=ou=people,dc=example,dc=com
+LDAP_USER_FILTER=(uid={username})
+LDAP_COMPANY_KEY=<company_key from users.company>
+LDAP_GROUP_MAP={"cn=admins,ou=groups,dc=example,dc=com":"Admin"}
+```
+
+- **`LDAP_URL`**: `ldap://` or `ldaps://`. Prefer `ldaps://`: passwords travel to the directory in clear text over `ldap://`. For a private CA, set `NODE_EXTRA_CA_CERTS` to its PEM file. StartTLS is not supported.
+- **`LDAP_BIND_DN`**, **`LDAP_BIND_PASSWORD`**: A read-only account that looks users up. Empty means an anonymous lookup.
+- **`LDAP_USER_BASE`**: Where to search (required). The search covers the whole subtree.
+- **`LDAP_USER_FILTER`**: Must contain `{username}`, which is replaced by the escaped name typed at sign-in. For Active Directory use `(sAMAccountName={username})`. A filter that matches two entries signs nobody in.
+- **`LDAP_COMPANY_KEY`**: The `company_key` of the company that new directory users are created in (required). It is a UUID, not the company name; read it from `users.company.company_key` (the seeded Default company's key is in `db/postgres/seed/default.sql`). One company only.
+- **`LDAP_GROUP_MAP`**: Optional JSON object of directory group DN to Doorward group name. The user's `memberOf` values are compared with it at every directory sign-in. The Doorward group must already exist in that company; a missing one is logged and skipped.
+
+How it behaves:
+
+- A username that no Doorward user holds is checked against the directory. On success the user is created with `auth_source = ldap`, name and email from `givenName`, `sn` (or `cn`) and `mail`. Those fields are copied once and not refreshed.
+- A directory user has no Doorward password; setting one is refused. Deactivating the user in Doorward blocks sign-in at once.
+- A local user (including the seeded `admin`) never falls through to the directory, so a directory account cannot take over a local one and the admin still signs in when the directory is down. A name that differs from a local user only by case is refused.
+- Groups in `LDAP_GROUP_MAP` belong to the directory: at each sign-in the user is added to the ones the directory lists and removed from the others. Removals are written to the audit log (`ldap_sync`). Groups not in the map are not touched. Changing the map needs a restart.
+- If the directory cannot be reached the sign-in fails like a wrong password; the cause is in the auth-failure log (`ldap_unavailable`).
+
 ## Web (`apps/web/.env`)
 
 ```env

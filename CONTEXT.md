@@ -22,7 +22,7 @@ The full text with reasons is in [docs/domain.md](docs/domain.md#rules).
 
 - Deactivate: sets `active = false` and `deleted_at`; the row leaves the lists and can be activated again. Reads exclude deactivated rows unless asked (`includeDeactivated`).
 - Remove: permanently deletes a deactivated row that nothing points at. The full row is kept in `audit_log`.
-- Sign-in: an active, not-deleted user with a matching password. No login permission. The admin UI additionally needs the `doorward.admin` permission, checked like any other.
+- Sign-in: an active, not-deleted user with a matching password (a user with `auth_source = ldap` has no Doorward password; the directory checks it, see [docs/environment.md](docs/environment.md#directory-sign-in-ldap)). No login permission. The admin UI additionally needs the `doorward.admin` permission, checked like any other.
 - Access: a user holds their own grants plus those of every active group they belong to. Groups are flat.
 - A grant at a scope also applies to every descendant scope. A grant with no scope applies company-wide. A Check without a scope counts company-wide grants only.
 - Grants are allow-only. There are no deny rules.

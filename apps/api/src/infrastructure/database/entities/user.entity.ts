@@ -40,6 +40,10 @@ export class UserEntity {
   @Column({ name: 'password_hash', ...textColumn() })
   passwordHash!: string;
 
+  /** 'local' checks passwordHash; 'ldap' binds to the directory and passwordHash stays empty. */
+  @Column({ name: 'auth_source', ...varcharColumn(10), default: 'local' })
+  authSource!: 'local' | 'ldap';
+
   @Column({ name: 'active', ...boolColumn({ default: true }) })
   active!: boolean;
 
