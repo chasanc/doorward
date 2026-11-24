@@ -106,7 +106,7 @@ In REST, these actions map to `POST /v1/<resource>/:id/deactivate`, `POST /v1/<r
 
 ## Multi-company mode
 
-When `MULTI_COMPANY_MODE=true`, gRPC callers must send a `company-key` metadata header, and REST sessions stay scoped to the signed-in user's company. When multi-company mode is off (the default), all operations use the seeded default company.
+When `MULTI_COMPANY_MODE=true`, gRPC callers must send a `company-key` metadata header, and REST sessions stay scoped to the signed-in user's company. When multi-company mode is off (the default), nothing confines a call to a company: a request that names a company id uses it, and a list that names none can return every company's rows. A fresh install has only the seeded default company, and creating a record still needs its `company_id`.
 
 ## Audit log
 
