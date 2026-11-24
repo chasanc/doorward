@@ -89,10 +89,11 @@ jobs:
       - run: bash scripts/smoke-http.sh
       - name: Migration probe (a new file applies, then the database is ahead of the code)
         run: |
-          printf 'CREATE TABLE users.ci_probe (id int);\n' > db/postgres/migrations/0002_ci_probe.sql
+          probe="db/postgres/migrations/$(printf '%04d' $(( $(ls db/postgres/migrations | wc -l) + 1 )))_ci_probe.sql"
+          printf 'CREATE TABLE users.ci_probe (id int);\n' > "$probe"
           pnpm db:migrate
           pnpm db:migrate:status
-          rm db/postgres/migrations/0002_ci_probe.sql
+          rm "$probe"
           if pnpm db:migrate:status; then echo "expected the database to be ahead of the code"; exit 1; fi
 
   e2e-mssql:
@@ -170,10 +171,11 @@ jobs:
       - run: bash scripts/smoke-http.sh
       - name: Migration probe (a new file applies, then the database is ahead of the code)
         run: |
-          printf 'CREATE TABLE users.ci_probe (id int);\nGO\n' > db/mssql/migrations/0002_ci_probe.sql
+          probe="db/mssql/migrations/$(printf '%04d' $(( $(ls db/mssql/migrations | wc -l) + 1 )))_ci_probe.sql"
+          printf 'CREATE TABLE users.ci_probe (id int);\nGO\n' > "$probe"
           pnpm db:migrate
           pnpm db:migrate:status
-          rm db/mssql/migrations/0002_ci_probe.sql
+          rm "$probe"
           if pnpm db:migrate:status; then echo "expected the database to be ahead of the code"; exit 1; fi
 
   images:
