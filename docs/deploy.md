@@ -111,6 +111,14 @@ Run the API container behind an HTTPS load balancer. Starting-point Terraform co
 
 - **Cloud Run and gRPC:** Cloud Run exposes one port per service, so the GCP example serves HTTP only. If you need gRPC alongside HTTP, use GKE or a Compute Engine VM.
 - **Database migrations:** The API refuses to start when the schema is behind or ahead of its code. Run `pnpm db:migrate` as a one-off job before a release, or set `AUTO_MIGRATE=true` (both Terraform examples do) to apply pending migrations on boot. Seed an admin once with `pnpm db:seed`.
+- **Seeding from the published image:** `pnpm` is not in the image, so run the seed with `node` inside the running API container. It needs a real admin password.
+
+  ```bash
+  docker exec -w /app/apps/api -e DOORWARD_ADMIN_PASSWORD='<real password>' \
+    <api-container> node dist/infrastructure/database/migrate/cli.js seed
+  ```
+
+  Replace `seed` with `migrate` or `status` for the other `db:` commands.
 - **Health checks:** Point your load balancer health check at `GET /api/health` on port `3001`. It runs `SELECT 1` with a 2-second timeout (at most one query per 5 seconds per process, whatever the traffic) and returns 200 with the schema version seen at startup, or 503 `{"status":"unavailable"}` when the database does not answer. The process does not open the port if startup cannot reach the database.
 - **Logs:** The API writes JSON logs to stdout for your platform to collect. Both Terraform examples set `LOG_HTTP_REQUESTS=false` because the load balancer keeps its own access log and health checks would flood the API log. See [logging.md](logging.md) for retention and other log switches.
 - **Tracing (optional):** Set the Terraform variable `otlp_endpoint` (for example `http://collector:4318`) to send OpenTelemetry traces. It defaults to empty, which leaves tracing off. The examples do not create a collector, and the API must be able to reach it: on AWS, allow outbound port `4318` in the task security group; on GCP, give Cloud Run VPC egress. See [logging.md](logging.md#tracing-optional-opentelemetry).
