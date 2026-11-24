@@ -2,6 +2,12 @@
 
 All notable changes to Doorward are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+
+- LDAP sign-in. Set `LDAP_URL` and users who are not in Doorward yet are checked against the directory and created on first sign-in. `LDAP_GROUP_MAP` keeps their membership of chosen groups in step with the directory at every sign-in. Needs `pnpm db:migrate` (migration `0002_ldap`, which adds `users.user.auth_source`). See [docs/environment.md](docs/environment.md#directory-sign-in-ldap).
+
 ## [0.1.1] - 2026-11-24
 
 ### Changed

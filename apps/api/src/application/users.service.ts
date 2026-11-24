@@ -100,6 +100,7 @@ export class UsersService {
       mobile: optionalText(input.mobile, 'mobile', 25),
       avatar: input.avatar?.length ? Buffer.from(input.avatar) : null,
       passwordHash: await this.passwords.hash(password),
+      authSource: 'local',
       active: true,
       deletedAt: null,
       createdAt: now,
@@ -169,6 +170,7 @@ export class UsersService {
 
   async setPassword(id: string, password: string, call: ServiceCall): Promise<void> {
     const row = await this.find({ id }, call);
+    if (row.authSource === 'ldap') throw invalid('This user signs in through the directory; change the password there');
     const passwordHash = await this.passwords.hash(checkPassword(password));
     await runAudited(this.db, call, async (manager) => {
       await manager.getRepository(UserEntity).update({ id }, { passwordHash, updatedAt: new Date() });

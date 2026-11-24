@@ -7,6 +7,7 @@ import { AuthService } from './application/auth.service.js';
 import { CompaniesService } from './application/companies.service.js';
 import { Tenancy } from './application/common.js';
 import { GrantsService } from './application/grants.service.js';
+import { LdapService } from './application/ldap.service.js';
 import { PasswordService } from './application/password.service.js';
 import { MfaService } from './application/mfa.service.js';
 import { OidcClientsService } from './application/oidc-clients.service.js';
@@ -44,6 +45,7 @@ import { V1Controller } from './http/v1.controller.js';
     { provide: APP_FILTER, useClass: AppErrorFilter },
     Tenancy,
     PasswordService,
+    LdapService,
     AccessService,
     AuthService,
     UsersService,
