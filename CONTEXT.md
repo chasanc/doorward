@@ -18,7 +18,7 @@ UI copy may say "Access rights"; code and SQL say **Permission**. In OAuth/OIDC 
 
 ## Domain rules
 
-The full text with reasons is in [docs/domain.md](docs/domain.md#rules).
+The full text with reasons is in [docs/domain.md](docs/domain.md#rules). Decisions that are hard to see from the code are recorded in [docs/adr](docs/adr/README.md).
 
 - Deactivate: sets `active = false` and `deleted_at`; the row leaves the lists and can be activated again. Reads exclude deactivated rows unless asked (`includeDeactivated`).
 - Remove: permanently deletes a deactivated row that nothing points at. The full row is kept in `audit_log`.
