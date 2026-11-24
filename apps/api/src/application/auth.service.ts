@@ -34,7 +34,8 @@ export class AuthService {
   private readonly log = new Logger('Auth');
 
   /**
-   * Sign-in: an active, not-deleted user of an active company with the right password.
+   * Sign-in: an active, not-deleted user of an active company with the right password
+   * (checked against the directory for a user with auth_source = ldap).
    * Every failure gives the same answer so callers cannot learn which part was wrong.
    */
   async authenticate(
@@ -46,9 +47,21 @@ export class AuthService {
     }
     const who = input.userKey ? { userKey: input.userKey } : { username: input.username };
     const where = { ...who, deletedAt: IsNull(), active: true };
-    const users = await this.db
+    let users = await this.db
       .getRepository(UserEntity)
       .find({ where: input.companyId ? { ...where, companyId: input.companyId.toLowerCase() } : where, take: 2 });
+    if (users.length === 0 && this.ldap.enabled && !input.userKey && input.username) {
+      // Directory names are case-insensitive, so `Professor` must find the row created for `professor`.
+      const query = this.db
+        .getRepository(UserEntity)
+        .createQueryBuilder('u')
+        .where('lower(u.username) = :name', { name: input.username.toLowerCase() })
+        .andWhere('u.authSource = :source', { source: 'ldap' })
+        .andWhere('u.deletedAt IS NULL')
+        .andWhere('u.active = :active', { active: true });
+      if (input.companyId) query.andWhere('u.companyId = :companyId', { companyId: input.companyId.toLowerCase() });
+      users = await query.take(2).getMany();
+    }
     // The same username can exist in two companies; without a company the sign-in is ambiguous.
     const user = users.length === 1 ? users[0] : undefined;
     // A directory user checks the directory. A username nobody holds may be a directory user's first sign-in.
@@ -79,7 +92,7 @@ export class AuthService {
     let account = user;
     if (!account) {
       try {
-        account = await this.provision(directory!, input.username!, input.companyId);
+        account = await this.provision(directory!, input.username!, call, input.companyId);
       } catch (error) {
         // A name that differs from a local user only by case collides on the unique index.
         if (error instanceof AppError) throw fail('provision_failed');
@@ -102,8 +115,11 @@ export class AuthService {
     return toUser(account);
   }
 
-  /** First directory sign-in: create the user in the configured company. Inserts are not audited. */
-  private async provision(directory: DirectoryUser, username: string, companyId?: string) {
+  /**
+   * First directory sign-in: create the user in the configured company. Inserts are not audited.
+   * The name is stored lower-cased, which is how later sign-ins in any case find it again.
+   */
+  private async provision(directory: DirectoryUser, username: string, call: ServiceCall, companyId?: string) {
     const company = await this.db
       .getRepository(CompanyEntity)
       .findOne({ where: { companyKey: this.ldap.companyKey, deletedAt: IsNull(), active: true } });
@@ -113,7 +129,7 @@ export class AuthService {
       id: uuidv7(),
       companyId: company.id,
       userKey: randomUUID(),
-      username,
+      username: username.trim().toLowerCase(),
       firstName: directory.firstName,
       lastName: directory.lastName,
       email: directory.email,
@@ -126,7 +142,7 @@ export class AuthService {
       createdAt: now,
       updatedAt: now,
     });
-    await runAudited(this.db, { source: 'rest' }, (manager) =>
+    await runAudited(this.db, { source: call.source }, (manager) =>
       manager.getRepository(UserEntity).insert(row).then(() => null),
     );
     return row;
@@ -151,23 +167,28 @@ export class AuthService {
       .filter(([dn]) => directory.groupDns.includes(dn))
       .map(([, name]) => idByName.get(name))
       .filter((id): id is string => id !== undefined);
-    await runAudited(this.db, { source: call.source, actorUserId: user.id }, async (manager) => {
-      const repo = manager.getRepository(UserGroupMemberEntity);
-      const existing = (await repo.find({ where: { userId: user.id, groupId: In(groups.map((g) => g.id)) } })).map(
-        (member) => member.groupId,
-      );
-      const { added, removed } = groupChanges(existing, [...new Set(wanted)]);
-      if (removed.length) await repo.delete({ userId: user.id, groupId: In(removed) });
-      if (added.length) await repo.insert(added.map((groupId) => ({ userId: user.id, groupId })));
-      if (!removed.length) return null; // only additions: inserts are not audited
-      return {
-        entityType: 'user_group_member',
-        entityId: user.id,
-        companyId: user.companyId,
-        eventType: 'ldap_sync',
-        payload: { added, removed },
-      };
-    });
+    try {
+      await runAudited(this.db, { source: call.source, actorUserId: user.id }, async (manager) => {
+        const repo = manager.getRepository(UserGroupMemberEntity);
+        const existing = (await repo.find({ where: { userId: user.id, groupId: In(groups.map((g) => g.id)) } })).map(
+          (member) => member.groupId,
+        );
+        const { added, removed } = groupChanges(existing, [...new Set(wanted)]);
+        if (removed.length) await repo.delete({ userId: user.id, groupId: In(removed) });
+        if (added.length) await repo.insert(added.map((groupId) => ({ userId: user.id, groupId })));
+        if (!removed.length) return null; // only additions: inserts are not audited
+        return {
+          entityType: 'user_group_member',
+          entityId: user.id,
+          companyId: user.companyId,
+          eventType: 'ldap_sync',
+          payload: { added, removed },
+        };
+      });
+    } catch (error) {
+      // A sign-in running at the same moment made the same additions first; the memberships are right, so go on.
+      if (!(error instanceof AppError && error.kind === 'already_exists')) throw error;
+    }
   }
 
   /** The admin UI needs sign-in plus doorward.admin company-wide. */

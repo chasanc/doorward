@@ -108,6 +108,21 @@ describe.skipIf(!dbUrl || !ldapUrl)('LDAP sign-in (live OpenLDAP + scratch Postg
     expect(await db.getRepository(UserEntity).countBy({ username: 'professor' })).toBe(1);
   });
 
+  it('finds the same user when the name is typed in another case', async () => {
+    const user = await auth.authenticate({ username: 'PROFESSOR', password: 'professor' }, call);
+    expect(user.username).toBe('professor');
+    expect(await db.getRepository(UserEntity).countBy({ username: 'professor' })).toBe(1);
+  });
+
+  it('survives two sign-ins syncing the same groups at once', async () => {
+    await db.query(`DELETE FROM users.user_group_member WHERE user_id IN (SELECT id FROM users."user" WHERE username = 'professor')`);
+    const results = await Promise.allSettled(
+      Array.from({ length: 4 }, () => auth.authenticate({ username: 'professor', password: 'professor' }, call)),
+    );
+    expect(results.map((r) => r.status)).toEqual(['fulfilled', 'fulfilled', 'fulfilled', 'fulfilled']);
+    expect(await groupsOf('professor')).toEqual(['Admin']);
+  });
+
   it('rejects a wrong password and creates nothing', async () => {
     await expect(auth.authenticate({ username: 'fry', password: 'nope' }, call)).rejects.toMatchObject({
       kind: 'unauthenticated',

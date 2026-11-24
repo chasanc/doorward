@@ -49,7 +49,7 @@ export function groupChanges(existing: string[], wanted: string[]) {
   };
 }
 
-const first =(value: Entry[string] | undefined): string | null => {
+const first = (value: Entry[string] | undefined): string | null => {
   const one = Array.isArray(value) ? value[0] : value;
   const text = one === undefined ? '' : one.toString().trim();
   return text || null;

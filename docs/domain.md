@@ -23,7 +23,7 @@ company ─┬─ user ──┬─ grant ── permission
 
 ## Rules
 
-1. **Sign-in only checks identity.** Authentication succeeds when the user exists, is active, is not deleted, belongs to an active company, and gives the right password (verified with argon2id). There is no special "can log in" permission. The admin console checks for `doorward.admin` the same way any other app checks a permission, so any app can reuse Doorward for sign-in.
+1. **Sign-in only checks identity.** Authentication succeeds when the user exists, is active, is not deleted, belongs to an active company, and gives the right password (verified with argon2id, or by the directory for a user created through [LDAP sign-in](environment.md#directory-sign-in-ldap)). There is no special "can log in" permission. The admin console checks for `doorward.admin` the same way any other app checks a permission, so any app can reuse Doorward for sign-in.
 2. **Groups are flat.** Groups cannot contain other groups. A user's effective permissions are their direct grants plus the grants of every active group they belong to. Flat groups make it easy to see why a user has access.
 3. **Scopes inherit downward.** A grant at scope `S` applies to `S` and every descendant beneath `S`. A grant with no scope applies company-wide. Granting access at `Germany` covers `Berlin` without listing every city.
 4. **Checks without a scope match company-wide grants only.** If an app calls `Check` without a scope, a grant tied to `Berlin` will not satisfy it.
